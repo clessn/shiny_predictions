@@ -1,0 +1,74 @@
+# Prompt: Analysis and Modification of an Electoral Visualization Shiny App
+
+## CONTEXT
+You are an expert in Shiny app development and geospatial data visualization. I need you to analyze an existing application that visualizes Canadian electoral predictions, then modify it to replace the current ggplot2 visualization with an interactive Leaflet visualization.
+
+## MAIN TASK
+1. Analyze the structure and functionalities of the existing Shiny application
+2. Create a modified version of the code that replaces the ggplot2 map with an interactive Leaflet map
+3. Ensure that all existing functionalities are preserved in the new version
+
+## CURRENT DATA AND STRUCTURE
+The current application uses:
+- A global.R file for libraries and shared data
+- A ui.R file for the user interface
+- A server.R file for server logic
+- Canadian electoral district data (map_data)
+- Survey data (donnees_sondage.rds)
+
+## SPECIFIC POINTS TO ANALYZE
+1. How the application structure is organized
+2. How filters and selections work (modelType, partyPrediction)
+3. How the data is processed and prepared for visualization
+4. How the current visualization is built with ggplot2
+5. What CSS elements and themes are used
+
+## REQUIRED MODIFICATIONS
+1. Replace the ggplot2 map with an interactive Leaflet map
+2. Organize the interface to have:
+   - A main map at the top
+   - Mini-maps at the bottom in a 2x4 grid (8 maps total)
+3. Preserve all existing filter functionalities
+4. Maintain visual consistency and style of the application
+
+## IMPORTANT CONSTRAINTS
+- **CRUCIAL**: Strictly respect the political party color scheme:
+  - LPC (Liberal Party): #D91920 (red)
+  - CPC (Conservative Party): #143053 (blue)
+  - NDP (New Democratic Party): #f58220 (orange)
+  - BQ (Bloc Québécois): #00A9ED (light blue)
+  - GP (Green Party): #4C9E45 (green)
+  - PPC (People's Party): #42297C (purple)
+- Ensure the code is optimized, well-commented, and maintainable
+- Preserve the transparency logic based on constituency competitiveness
+
+## INSTRUCTIONS FOR LEAFLET VISUALIZATION
+1. The main map should:
+   - Display all constituencies in Canada
+   - Use party colors as fill
+   - Adjust transparency according to competitiveness ("closeness")
+   - Include popups that show details of each constituency on hover/click
+
+2. The 8 mini-maps should represent:
+   - One map for each party (LPC, CPC, BQ, NDP, GP, PPC)
+   - One map for "All parties"
+   - One map for "Battlefields" (constituencies with closeness ≤ 5%)
+
+3. Interactive features to integrate:
+   - Zoom and pan
+   - Dynamic filtering according to the selected party
+   - Visual consistency between the main map and mini-maps
+
+## EXPECTED RESPONSE FORMAT
+1. Detailed analysis of the structure and functionalities of the existing application
+2. Complete modified code for global.R, ui.R, and server.R
+3. Explanations of the modifications made
+4. Suggestions for future improvements
+
+## TECHNICAL CONSIDERATIONS
+- Use sf::st_transform to convert geometries to CRS 4326 (required by Leaflet)
+- Use cartessn::crop_map for regional mini-maps
+- Optimize performance to efficiently handle geospatial data
+- Ensure compatibility between libraries (sf, leaflet, dplyr)
+
+Provide a complete, detailed solution ready for implementation.

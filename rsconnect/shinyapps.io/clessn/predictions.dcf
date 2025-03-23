@@ -1,0 +1,10 @@
+name: predictions
+title:
+username: clessn
+account: clessn
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14314056
+bundleId: 9987779
+url: https://clessn.shinyapps.io/predictions/
+version: 1
