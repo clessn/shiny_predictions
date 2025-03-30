@@ -616,24 +616,7 @@ ui <- fluidPage(
   sidebarLayout(
     # Sidebar with controls
     sidebarPanel(
-      width = 3,
-      # Language selector with flags
-      div(style = "display: flex; justify-content: space-between; margin-bottom: 25px; background-color: #f5f5f5; border-radius: 5px; padding: 10px;",
-          div(style = "font-weight: bold; margin-right: 10px; align-self: center;", 
-              icon("language"), " "),
-          div(style = "display: flex; gap: 10px;",
-              # French button
-              actionButton("setLangFR", 
-                          label = "Français",
-                          icon = icon("flag"),
-                          style = "padding: 5px 10px; border-radius: 4px; font-size: 14px; background-color: #6c757d; color: white; border: none;"),
-              # English button
-              actionButton("setLangEN", 
-                          label = "English",
-                          icon = icon("flag"),
-                          style = "padding: 5px 10px; border-radius: 4px; font-size: 14px; background-color: white; color: #6c757d; border: 1px solid #6c757d;")
-          )
-      ),
+      width = 2,
       h3(HTML(""), 
          class = "sidebar-title"),
       
@@ -750,12 +733,30 @@ ui <- fluidPage(
           p(textOutput("dataUpdatedText")),
           p(textOutput("respondentsText")),
           p(htmlOutput("hoverInfoText"))
+      ),
+      
+      # Language selector with flags (moved to bottom)
+      div(style = "margin-top: 25px; background-color: #f5f5f5; border-radius: 5px; padding: 10px;",
+          div(style = "font-weight: bold; margin-bottom: 10px; text-align: center;", 
+              icon("language"), " Language / Langue"),
+          div(style = "display: flex; flex-direction: column; gap: 8px;",
+              # French button
+              actionButton("setLangFR", 
+                          label = "Français",
+                          icon = icon("flag"),
+                          style = "width: 100%; padding: 5px 10px; border-radius: 4px; font-size: 14px; background-color: #6c757d; color: white; border: none;"),
+              # English button
+              actionButton("setLangEN", 
+                          label = "English",
+                          icon = icon("flag"),
+                          style = "width: 100%; padding: 5px 10px; border-radius: 4px; font-size: 14px; background-color: white; color: #6c757d; border: 1px solid #6c757d;")
+          )
       )
     ),
     
     # Main panel with maps and data table
     mainPanel(
-      width = 9,
+      width = 10,
       
       # Title
       div(class = "title-container",
