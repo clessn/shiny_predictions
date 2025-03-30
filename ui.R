@@ -770,7 +770,7 @@ ui <- fluidPage(
       div(class = "map-container",
           style = "margin-bottom: 20px; background: white; padding: 15px; border: 1px solid #e6e6e6; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);",
           withSpinner(
-            girafeOutput("mapPlot", height = "500px"),
+            girafeOutput("mapPlot", height = "600px"),
             color = "#555555", type = 8, size = 0.8
           )
       ),
@@ -784,38 +784,54 @@ ui <- fluidPage(
               
               # Row 1 cities
               div(class = "city-map-box",
-                  girafeOutput("montrealMap", height = "180px"),
-                  div(class = "map-title-overlay", textOutput("montrealTitle"))
+                  div(style = "position: relative;",
+                      girafeOutput("montrealMap", height = "200px"),
+                      div(style = "text-align: center; padding: 5px; font-weight: bold;", textOutput("montrealTitle"))
+                  )
               ),
               div(class = "city-map-box",
-                  girafeOutput("torontoMap", height = "180px"),
-                  div(class = "map-title-overlay", textOutput("torontoTitle"))
+                  div(style = "position: relative;",
+                      girafeOutput("torontoMap", height = "200px"),
+                      div(style = "text-align: center; padding: 5px; font-weight: bold;", textOutput("torontoTitle"))
+                  )
               ),
               div(class = "city-map-box",
-                  girafeOutput("vancouverMap", height = "180px"),
-                  div(class = "map-title-overlay", textOutput("vancouverTitle"))
+                  div(style = "position: relative;",
+                      girafeOutput("vancouverMap", height = "200px"),
+                      div(style = "text-align: center; padding: 5px; font-weight: bold;", textOutput("vancouverTitle"))
+                  )
               ),
               div(class = "city-map-box",
-                  girafeOutput("quebecCityMap", height = "180px"),
-                  div(class = "map-title-overlay", textOutput("quebecCityTitle"))
+                  div(style = "position: relative;",
+                      girafeOutput("quebecCityMap", height = "200px"),
+                      div(style = "text-align: center; padding: 5px; font-weight: bold;", textOutput("quebecCityTitle"))
+                  )
               ),
               
               # Row 2 cities
               div(class = "city-map-box",
-                  girafeOutput("ottawaMap", height = "180px"),
-                  div(class = "map-title-overlay", textOutput("ottawaTitle"))
+                  div(style = "position: relative;",
+                      girafeOutput("ottawaMap", height = "200px"),
+                      div(style = "text-align: center; padding: 5px; font-weight: bold;", textOutput("ottawaTitle"))
+                  )
               ),
               div(class = "city-map-box",
-                  girafeOutput("winnipegMap", height = "180px"),
-                  div(class = "map-title-overlay", textOutput("winnipegTitle"))
+                  div(style = "position: relative;",
+                      girafeOutput("winnipegMap", height = "200px"),
+                      div(style = "text-align: center; padding: 5px; font-weight: bold;", textOutput("winnipegTitle"))
+                  )
               ),
               div(class = "city-map-box",
-                  girafeOutput("kitchenerMap", height = "180px"),
-                  div(class = "map-title-overlay", textOutput("kitchenerTitle"))
+                  div(style = "position: relative;",
+                      girafeOutput("kitchenerMap", height = "200px"),
+                      div(style = "text-align: center; padding: 5px; font-weight: bold;", textOutput("kitchenerTitle"))
+                  )
               ),
               div(class = "city-map-box",
-                  girafeOutput("londonMap", height = "180px"),
-                  div(class = "map-title-overlay", textOutput("londonTitle"))
+                  div(style = "position: relative;",
+                      girafeOutput("londonMap", height = "200px"),
+                      div(style = "text-align: center; padding: 5px; font-weight: bold;", textOutput("londonTitle"))
+                  )
               )
           )
       ),

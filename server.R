@@ -181,7 +181,7 @@ server <- function(input, output, session) {
       )
     
     # Filter by party if selected
-    if (input$partyPrediction == "All parties") {
+    if (input$partyPrediction == t("all_parties") || input$partyPrediction == "All parties" || input$partyPrediction == "Tous les partis") {
       return(map_filtered)
     } else if (input$partyPrediction == "Battlefields") {
       # Now we return ALL ridings but with the battlefield intensity calculated
@@ -417,7 +417,7 @@ server <- function(input, output, session) {
     p <- p
     
     # Convertir en girafe pour l'interactivité
-    girafe(ggobj = p, width_svg = 10, height_svg = 7, options = list(
+    girafe(ggobj = p, width_svg = 14, height_svg = 8, options = list(
       opts_tooltip(
         opacity = 0.9,
         css = "background-color: white; color: #333333; padding: 10px; border-radius: 5px; border: 1px solid #cccccc; font-family: 'Times New Roman', Times, serif;"
@@ -519,7 +519,7 @@ server <- function(input, output, session) {
               )
             
             # Convertir en girafe pour l'interactivité
-            return(girafe(ggobj = p, width_svg = 5, height_svg = 4, options = list(
+            return(girafe(ggobj = p, width_svg = 6, height_svg = 5, options = list(
               opts_tooltip(
                 opacity = 0.9,
                 css = "background-color: white; color: #333333; padding: 5px; border-radius: 3px; border: 1px solid #cccccc; font-family: 'Times New Roman', Times, serif; font-size: 12px;"
