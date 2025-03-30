@@ -291,7 +291,9 @@ server <- function(input, output, session) {
       # Calculate party seats - save to a reactive value so it can be accessed in sidebar
       # Use unique riding ids to ensure each riding is counted only once
       # This solves the issue where some ridings appear in multiple shape files
+      # Convert to data.frame first to avoid sf geometry issues with distinct
       unique_ridings <- plot_data %>%
+        st_drop_geometry() %>%
         select(id_riding, party) %>%
         distinct(id_riding, .keep_all = TRUE)
       
