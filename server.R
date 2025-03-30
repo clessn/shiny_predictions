@@ -107,24 +107,33 @@ server <- function(input, output, session) {
         # Higher probability = darker (more solid lead)
         # Lower probability = lighter (less certain)
         alpha_category = case_when(
-          first_party_percentage <= 55 ~ 0.4,                     # Very uncertain - PALE
-          first_party_percentage > 55 & first_party_percentage <= 65 ~ 0.55, # Somewhat uncertain - ASSEZ PALE
-          first_party_percentage > 65 & first_party_percentage <= 75 ~ 0.7,  # Medium certainty - MOYEN
-          first_party_percentage > 75 & first_party_percentage <= 85 ~ 0.85, # High certainty - FONCÉ
-          first_party_percentage > 85 ~ 1.0,                      # Very high certainty - TRÈS FONCÉ
+          first_party_percentage <= 52 ~ 0.35,                    # Too close to call - VERY PALE
+          first_party_percentage > 52 & first_party_percentage <= 58 ~ 0.5,  # Toss up - PALE
+          first_party_percentage > 58 & first_party_percentage <= 70 ~ 0.7,  # Competitive - MEDIUM
+          first_party_percentage > 70 & first_party_percentage <= 85 ~ 0.85, # Likely win - DARK
+          first_party_percentage > 85 ~ 1.0,                      # Safe win - VERY DARK
           TRUE ~ 0.6                                              # Default
         ),
         # Calculate battlefield intensity as the inverse of probability
         # Lower probability = higher battlefield intensity (more competitive)
         battlefield_intensity = pmin(100, pmax(0, 100 - first_party_percentage)),
+        # Add closeness category
+        closeness_category = case_when(
+          first_party_percentage <= 52 ~ ifelse(rv$lang() == "fr", "Trop serré pour prédire", "Too close to call"),
+          first_party_percentage > 52 & first_party_percentage <= 58 ~ ifelse(rv$lang() == "fr", "Course serrée", "Toss up"),
+          first_party_percentage > 58 & first_party_percentage <= 70 ~ ifelse(rv$lang() == "fr", "Avance modérée", "Competitive"),
+          first_party_percentage > 70 & first_party_percentage <= 85 ~ ifelse(rv$lang() == "fr", "Avance confortable", "Likely win"),
+          first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
+          TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
+        ),
         # Create tooltip text based on current language
         tooltip_text = paste0(
           "<strong>", name_riding_fr, "</strong><br>",
           ifelse(rv$lang() == "fr", "Parti en tête: ", "Leading party: "),
           "<span style='color:", party_colors[party], ";'>", 
           party, " (", round(first_party_percentage, 1), "%)</span><br>",
-          ifelse(rv$lang() == "fr", "Probabilité de victoire: ", "Win probability: "), 
-          round(first_party_percentage, 1), "%"
+          ifelse(rv$lang() == "fr", "Certitude: ", "Certainty: "), 
+          closeness_category
         )
       )
     
@@ -274,6 +283,17 @@ server <- function(input, output, session) {
           guide = "none"
         )
     } else {
+      # Calculate party seat counts
+      party_seats <- table(plot_data$party)
+      party_seats <- party_seats[partis_politiques]
+      party_seats[is.na(party_seats)] <- 0
+      
+      # Create labels with seat counts for legend
+      party_legend_labels <- sapply(names(party_seats), function(p) {
+        paste0(party_names[[rv$lang()]][p], " (", p, "): ", party_seats[p], " ", 
+               ifelse(rv$lang() == "fr", "sièges", "seats"))
+      })
+      
       # Standard party colors map
       p <- ggplot() +
         geom_sf_interactive(data = plot_data, 
@@ -281,8 +301,8 @@ server <- function(input, output, session) {
                             color = "#777777", linewidth = 0.25) +
         scale_fill_manual(
           values = party_colors,
-          name = NULL,
-          labels = function(x) paste0(party_names[x], " (", x, ")"),
+          name = ifelse(rv$lang() == "fr", "Sièges par parti", "Seats by party"),
+          labels = party_legend_labels,
           na.value = "#777777"
         ) +
         scale_alpha_identity()
@@ -303,8 +323,13 @@ server <- function(input, output, session) {
         # Remove caption
         plot.caption = element_blank(),
         
-        # Remove legend
-        legend.position = "none",
+        # Configure legend
+        legend.position = ifelse(input$partyPrediction == "Battlefields", "none", "bottom"),
+        legend.background = element_rect(fill = "white", color = "#cccccc"),
+        legend.margin = margin(5, 5, 5, 5),
+        legend.box.margin = margin(0, 0, 10, 0),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 11, face = "bold"),
         
         # Remove grid and axes
         panel.grid.major = element_blank(),
@@ -400,7 +425,7 @@ server <- function(input, output, session) {
               ) +
               theme_minimal() +
               theme(
-                legend.position = "none",
+                legend.position = "none", # No legend for city maps as they are small
                 plot.background = element_rect(fill = "white", color = NA, linewidth = 0),
                 panel.background = element_rect(fill = "white", color = NA, linewidth = 0),
                 panel.grid = element_blank(),
@@ -470,7 +495,18 @@ server <- function(input, output, session) {
         riding_name = map_data$name_riding_fr[match(riding, map_data$id_riding)],
         # Use ID if name not found
         riding_name = ifelse(is.na(riding_name), as.character(riding), riding_name),
-        # Format percentage with % symbol
+        # Calculate closeness category for display
+        closeness_category = case_when(
+          first_party_percentage <= 52 ~ ifelse(rv$lang() == "fr", "Trop serré pour prédire", "Too close to call"),
+          first_party_percentage > 52 & first_party_percentage <= 58 ~ ifelse(rv$lang() == "fr", "Course serrée", "Toss up"),
+          first_party_percentage > 58 & first_party_percentage <= 70 ~ ifelse(rv$lang() == "fr", "Avance modérée", "Competitive"),
+          first_party_percentage > 70 & first_party_percentage <= 85 ~ ifelse(rv$lang() == "fr", "Avance confortable", "Likely win"),
+          first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
+          TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
+        ),
+        # Store original percentage for sorting
+        percentage_value = first_party_percentage,
+        # Format percentage with % symbol (keep for reference)
         win_probability = paste0(round(first_party_percentage, 1), "%")
       ) %>%
       # Rename columns for display
@@ -480,13 +516,15 @@ server <- function(input, output, session) {
           c(
             "Circonscription" = "riding_name",
             "Parti en tête" = "party",
-            "Probabilité de victoire" = "win_probability"
+            "Certitude" = "closeness_category",
+            "Pourcentage" = "percentage_value"  # Hidden column for sorting
           )
         } else {
           c(
             "Riding" = "riding_name",
             "Leading party" = "party",
-            "Win probability" = "win_probability"
+            "Certainty" = "closeness_category",
+            "Percentage" = "percentage_value"  # Hidden column for sorting
           )
         }
       )
@@ -605,13 +643,34 @@ server <- function(input, output, session) {
    # Only create the datatable when we have data
    req(nrow(display_data) > 0)
    
-   # Extract win probability column name based on language
-   prob_col <- if(rv$lang() == "fr") "Probabilité de victoire" else "Win probability"
+   # Extract column names based on language
+   status_col <- if(rv$lang() == "fr") "Certitude" else "Certainty"
+   percentage_col <- if(rv$lang() == "fr") "Pourcentage" else "Percentage"
+   party_col <- if(rv$lang() == "fr") "Parti en tête" else "Leading party"
+   
+   # Not using color styles for certainty column anymore, 
+   # but keeping the categories for reference
+   status_categories <- c(
+     "Too close to call",
+     "Toss up",
+     "Competitive",
+     "Likely win",
+     "Safe win",
+     # French versions
+     "Trop serré pour prédire",
+     "Course serrée",
+     "Avance modérée",
+     "Avance confortable",
+     "Victoire quasi-certaine",
+     # Fallbacks
+     "Unknown",
+     "Inconnu"
+   )
    
    # Special color styling for Battlefields mode
    if (input$partyPrediction == "Battlefields") {
-     # Get probabilities as numeric for battlefields coloring
-     numeric_probs <- as.numeric(gsub("%", "", display_data[[prob_col]]))
+     # Get percentages for battlefields coloring
+     numeric_probs <- display_data[[percentage_col]]
      
      # Calculate color intensity for each row - inverse of probability
      battlefield_colors <- sapply(numeric_probs, function(prob) {
@@ -647,11 +706,9 @@ server <- function(input, output, session) {
      })
    }
    
-   # Determine party column name based on language
-   party_col <- if(rv$lang() == "fr") "Parti en tête" else "Leading party"
-   
-   # Return the data with improved formatting
+   # Create the data table with its options
    dt <- datatable(
+     # Keep all columns including percentage for sorting
      display_data,
      options = list(
        pageLength = 10,
@@ -666,35 +723,39 @@ server <- function(input, output, session) {
        # Define column defs
        columnDefs = list(
          list(className = 'dt-center', targets = "_all"),
-         # Add a columnDef to treat the probability column numerically
+         # Make the percentage column hidden but use it for sorting
          list(
-           targets = if(rv$lang() == "fr") 2 else 2,  # Probability column index
-           type = 'num'
+           targets = 3,  # Percentage column index
+           visible = FALSE
+         ),
+         # Make the status column sortable by the percentage column
+         list(
+           targets = 2,  # Status column index
+           orderData = 3  # Use percentage column for sorting
          )
        ),
-       # In battlefield mode, sort by probability (ascending = most competitive first)
-       order = if(input$partyPrediction == "Battlefields") list(list(2, 'asc')) else NULL
+       # In battlefield mode, sort by percentage (ascending = most competitive first)
+       order = if(input$partyPrediction == "Battlefields") list(list(3, 'asc')) else NULL
      ),
      rownames = FALSE,
      class = 'cell-border stripe compact'
    ) %>%
      formatStyle(
-       columns = colnames(display_data),
+       columns = colnames(display_data)[1:3], # Style only the visible columns
        backgroundColor = "white",
        color = "black"
      )
    
    # Apply specific styling based on mode
    if (input$partyPrediction == "Battlefields") {
-     # For Battlefields, color the probability column with the battlefield gradient
-     # and adjust text color to ensure readability
+     # For Battlefields, use plain text for certainty column (no background color)
      dt <- dt %>% formatStyle(
-       columns = prob_col,
-       backgroundColor = styleEqual(display_data[[prob_col]], battlefield_colors),
-       color = styleEqual(display_data[[prob_col]], text_colors)
+       columns = status_col,
+       backgroundColor = "white",
+       color = "#333333"
      )
    } else {
-     # For other modes, color the party column
+     # Color the party column by party color
      dt <- dt %>% formatStyle(
        columns = party_col,
        backgroundColor = styleEqual(
@@ -703,6 +764,13 @@ server <- function(input, output, session) {
            paste0(color, "25")  # Add transparency to the color
          })
        )
+     )
+     
+     # Plain text for certainty column (no background color)
+     dt <- dt %>% formatStyle(
+       columns = status_col,
+       backgroundColor = "white",
+       color = "#333333"
      )
    }
    
@@ -722,11 +790,41 @@ server <- function(input, output, session) {
   output$modelTypeValue <- renderText({ t("app_title") })
   output$partyPredictionLabel <- renderText({ t("party_prediction") })
   output$leadStrengthTitle <- renderText({ t("lead_strength") })
-  output$competitiveRidingLabel <- renderUI({ HTML(gsub("\n", "<br>", t("riding_competitive"))) })
-  output$consolidatedLeadLabel <- renderUI({ HTML(gsub("\n", "<br>", t("consolidated_lead"))) })
+  
+  # Generate new text for the closeness categories
+  output$competitiveRidingLabel <- renderUI({ 
+    if(rv$lang() == "fr") {
+      HTML("Trop serré<br>pour prédire")
+    } else {
+      HTML("Too close<br>to call")
+    }
+  })
+  
+  output$consolidatedLeadLabel <- renderUI({ 
+    if(rv$lang() == "fr") {
+      HTML("Victoire<br>quasi-certaine")
+    } else {
+      HTML("Safe<br>win")
+    }
+  })
+  
   output$competitivenessTitle <- renderText({ t("competitiveness") })
-  output$lessCompetitiveLabel <- renderUI({ HTML(gsub("\n", "<br>", t("less_competitive"))) })
-  output$moreCompetitiveLabel <- renderUI({ HTML(gsub("\n", "<br>", t("more_competitive"))) })
+  
+  output$lessCompetitiveLabel <- renderUI({ 
+    if(rv$lang() == "fr") {
+      HTML("Moins<br>compétitif")
+    } else {
+      HTML("Less<br>competitive")
+    }
+  })
+  
+  output$moreCompetitiveLabel <- renderUI({ 
+    if(rv$lang() == "fr") {
+      HTML("Plus<br>compétitif")
+    } else {
+      HTML("More<br>competitive")
+    }
+  })
   output$dataLinkLabel <- renderText({ t("data_link") })
   output$dataUpdatedText <- renderText({ t("data_updated") })
   
