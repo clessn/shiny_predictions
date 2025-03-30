@@ -697,7 +697,6 @@ ui <- fluidPage(
                 h4(textOutput("seatCountTitle"), class = "party-legend-title"),
                 htmlOutput("seatCountLegend")
             )
-            )
         )
       ),
       
