@@ -28,8 +28,8 @@ server <- function(input, output, session) {
   
   # Update UI choices to include "All parties" as default
   updateSelectInput(session, "partyPrediction", 
-                    choices = c("All parties", "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
-                    selected = "All parties")
+                    choices = c("Tous les partis", "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
+                    selected = "Tous les partis")
   
   # Calculate base data processing avec les données pondérées
   rv$processed_data <- reactive({
