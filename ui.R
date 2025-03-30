@@ -690,6 +690,13 @@ ui <- fluidPage(
                                          ), " 100%);"))
                   )
                 })
+            ),
+            
+            # Seats counter legend
+            div(class = "seat-counter-container", style = "margin-top: 20px;",
+                h4(textOutput("seatCountTitle"), class = "party-legend-title"),
+                htmlOutput("seatCountLegend")
+            )
             )
         )
       ),

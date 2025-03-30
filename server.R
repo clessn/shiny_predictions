@@ -144,7 +144,12 @@ server <- function(input, output, session) {
       # Now we return ALL ridings but with the battlefield intensity calculated
       return(map_filtered)
     } else if (input$partyPrediction %in% partis_politiques) {
-      return(map_filtered %>% filter(party == input$partyPrediction))
+      # For party-specific view: add a column to show selected party's ridings in color
+      # and show others in gray
+      return(map_filtered %>% 
+               mutate(selected_party = party == input$partyPrediction,
+                     # Keep original party for the selected ones, set "other" for non-selected
+                     display_party = ifelse(selected_party, party, "other")))
     } else {
       return(map_filtered)
     }
@@ -283,29 +288,42 @@ server <- function(input, output, session) {
           guide = "none"
         )
     } else {
-      # Calculate party seat counts
-      party_seats <- table(plot_data$party)
+      # Calculate party seats - save to a reactive value so it can be accessed in sidebar
+      party_seats <- table(map_filtered$party)
       party_seats <- party_seats[partis_politiques]
       party_seats[is.na(party_seats)] <- 0
       
-      # Create labels with seat counts for legend
-      party_legend_labels <- sapply(names(party_seats), function(p) {
-        paste0(party_names[[rv$lang()]][p], " (", p, "): ", party_seats[p], " ", 
-               ifelse(rv$lang() == "fr", "sièges", "seats"))
-      })
+      # Save party seats to reactive values for use in sidebar
+      rv$party_seats <- party_seats
       
-      # Standard party colors map
-      p <- ggplot() +
-        geom_sf_interactive(data = plot_data, 
-                            aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
-                            color = "#777777", linewidth = 0.25) +
-        scale_fill_manual(
-          values = party_colors,
-          name = ifelse(rv$lang() == "fr", "Sièges par parti", "Seats by party"),
-          labels = party_legend_labels,
-          na.value = "#777777"
-        ) +
-        scale_alpha_identity()
+      # Check if it's a party-specific view
+      if (input$partyPrediction %in% partis_politiques) {
+        # For party-specific maps, show selected party in color and others gray
+        party_specific_colors <- c(party_colors, "other" = "#DDDDDD")
+        
+        p <- ggplot() +
+          geom_sf_interactive(data = plot_data, 
+                  aes(fill = display_party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                  color = "#777777", linewidth = 0.25) +
+          scale_fill_manual(
+            values = party_specific_colors,
+            name = NULL,
+            na.value = "#777777"
+          ) +
+          scale_alpha_identity()
+      } else {
+        # Standard party colors map (all parties)
+        p <- ggplot() +
+          geom_sf_interactive(data = plot_data, 
+                  aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                  color = "#777777", linewidth = 0.25) +
+          scale_fill_manual(
+            values = party_colors,
+            name = NULL,
+            na.value = "#777777"
+          ) +
+          scale_alpha_identity()
+      }
     }
     
     # Add common theme elements
@@ -323,13 +341,8 @@ server <- function(input, output, session) {
         # Remove caption
         plot.caption = element_blank(),
         
-        # Configure legend
-        legend.position = ifelse(input$partyPrediction == "Battlefields", "none", "bottom"),
-        legend.background = element_rect(fill = "white", color = "#cccccc"),
-        legend.margin = margin(5, 5, 5, 5),
-        legend.box.margin = margin(0, 0, 10, 0),
-        legend.text = element_text(size = 10),
-        legend.title = element_text(size = 11, face = "bold"),
+        # Remove legend from plot
+        legend.position = "none",
         
         # Remove grid and axes
         panel.grid.major = element_blank(),
@@ -403,17 +416,32 @@ server <- function(input, output, session) {
                   limits = c(0, 100)
                 )
             } else {
-              # Standard party map for cities
-              p <- ggplot() +
-                geom_sf_interactive(data = city_data, 
-                                    aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
-                                    color = "#333333", linewidth = 0.3) +
-                scale_fill_manual(
-                  values = party_colors,
-                  labels = function(x) paste0(party_names[[rv$lang()]][x], " (", x, ")"),
-                  na.value = "#777777"
-                ) +
-                scale_alpha_identity()
+              # Check if it's a party-specific view
+              if (input$partyPrediction %in% partis_politiques && "display_party" %in% colnames(city_data)) {
+                # For party-specific city maps
+                party_specific_colors <- c(party_colors, "other" = "#DDDDDD")
+                
+                p <- ggplot() +
+                  geom_sf_interactive(data = city_data, 
+                          aes(fill = display_party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                          color = "#333333", linewidth = 0.3) +
+                  scale_fill_manual(
+                    values = party_specific_colors,
+                    na.value = "#777777"
+                  ) +
+                  scale_alpha_identity()
+              } else {
+                # Standard party map for cities
+                p <- ggplot() +
+                  geom_sf_interactive(data = city_data, 
+                          aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                          color = "#333333", linewidth = 0.3) +
+                  scale_fill_manual(
+                    values = party_colors,
+                    na.value = "#777777"
+                  ) +
+                  scale_alpha_identity()
+              }
             }
             
             # Add common elements to all city maps
@@ -833,6 +861,34 @@ server <- function(input, output, session) {
   
   output$hoverInfoText <- renderUI({ HTML(paste0("<i class='fas fa-info-circle'></i> ", t("hover_info"))) })
   output$appTitle <- renderUI({ HTML(t("app_title")) })
+  
+  # Seat count title and legend
+  output$seatCountTitle <- renderText({ t("seat_count") })
+  
+  output$seatCountLegend <- renderUI({
+    # Update only when party prediction changes
+    req(input$partyPrediction)
+    
+    # Get party seats from reactive values
+    if (is.null(rv$party_seats)) return(HTML(""))
+    
+    # Create party rows with seat counts
+    seat_html <- lapply(names(rv$party_seats), function(party) {
+      color_style <- paste0("color: ", party_colors[party], "; font-weight: bold;")
+      count <- rv$party_seats[party]
+      label <- ifelse(rv$lang() == "fr", "sièges", "seats")
+      
+      HTML(paste0(
+        "<div style='display: flex; justify-content: space-between; margin: 5px 0;'>",
+        "<span style='", color_style, "'>", party, "</span>",
+        "<span>", count, " ", label, "</span>",
+        "</div>"
+      ))
+    })
+    
+    # Join all HTML pieces together
+    do.call(tagList, seat_html)
+  })
   
   # City names based on current language
   output$montrealTitle <- renderText({ city_names[[rv$lang()]]["montreal"] })
