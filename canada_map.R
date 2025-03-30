@@ -1,18 +1,13 @@
-# Essential libraries
-library(plotly)
+##########################################
+# PART 1: SIMPLIFY AND SAVE MAP DATA
+##########################################
+
+# Load essential libraries for simplification
 library(sf)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(ggiraph)
 
 # Load map data first
 map_data <- readRDS("data/map_data.rds")
 map_data$id_riding <- as.character(map_data$id_riding)
-
-##########################################
-# GEOMETRY SIMPLIFICATION FIRST
-##########################################
 
 # Transform to WGS84 for better web rendering
 map_data <- st_transform(map_data, 4326)
@@ -40,7 +35,24 @@ simplified_geoms <- lapply(geom_list, function(g) simplify_geometry(g, tolerance
 map_data_simplified <- map_data
 map_data_simplified$geometry <- st_sfc(simplified_geoms, crs = st_crs(map_data))
 
-# Now load the electoral data
+# Save the simplified map data
+saveRDS(map_data_simplified, "data/map_data_simplified.rds")
+
+##########################################
+# PART 2: USE SIMPLIFIED MAP FOR ANALYSIS
+##########################################
+
+# Essential libraries
+library(sf)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggiraph)
+
+# Load pre-simplified map data
+map_data_simplified <- readRDS("data/map_data_simplified.rds")
+
+# Load the electoral data
 donnees_sondage <- readRDS("data/donnees_sondage_ponderees.rds")
 
 # Define party colors
@@ -143,5 +155,3 @@ girafe_map <- girafe(
 
 # Display ggiraph map
 print(girafe_map)
-
-

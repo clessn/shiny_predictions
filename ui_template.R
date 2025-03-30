@@ -614,11 +614,11 @@ ui <- fluidPage(
           )
       ),
       
-      # Party prediction dropdown - use original choices to work with server.R
+      # Party prediction dropdown
       h4("Prédiction par parti:", class = "input-title"),
       selectInput("partyPrediction", NULL,
-                  choices = c("All parties", "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
-                  selected = "All parties"),
+                  choices = c("Tous les partis", "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
+                  selected = "Tous les partis"),
       
       
       conditionalPanel(
@@ -691,9 +691,6 @@ ui <- fluidPage(
               ),
               div(class = "source-item",
                   a(href = "https://www.poliwave.com", target = "_blank", "Poliwave")
-              ),
-              div(class = "source-item",
-                  a(href = "https://canada.datagotchi.com", target = "_blank", "Léger-Datagotchi")
               )
           )
       ),
@@ -713,7 +710,6 @@ ui <- fluidPage(
       HTML('
 <div class="title-container">
   <h1 class="main-title">Agrégateur d\'agrégateurs <span class="shrug-icon">¯\\_(ツ)_/¯</span></h1>
-  <h2 class="subtitle">+ Prédiction citoyenne Léger-Datagotchi</h2>
 </div>
       '),
       
