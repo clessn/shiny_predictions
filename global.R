@@ -297,9 +297,9 @@ crop_map_for_app <- function(spatial_df, city, city_mapping) {
 my_theme <- bs_theme(
   version = 5,
   bootswatch = "default",
-  primary = "#18BC9C",
+  primary = "#6c757d",      # Changed to a smooth slate gray
   secondary = "#95A5A6",
-  success = "#18BC9C",
+  success = "#6c757d",      # Also updated success to match primary
   info = "#3498DB",
   warning = "#F39C12",
   danger = "#E74C3C",
