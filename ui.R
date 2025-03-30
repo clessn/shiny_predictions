@@ -1,4 +1,4 @@
-# ui.R - Avec légende pour Battlefields
+# ui.R - Optimized version (compatible with existing server.R)
 library(shiny)
 library(waiter)
 library(shinyjs)
@@ -13,7 +13,6 @@ loading_screen <- tagList(
     style = "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: #f9f9f9; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column;",
     div(class = "text-center",
         tags$div(style = "color: #222222; font-size: 28px; margin-bottom: 20px; font-family: 'Libre Baskerville', Georgia, serif;"),
-#                 HTML("<i class='fas fa-map-marked-alt'></i> Electoral Map")),
         tags$p(style = "color: #555555; font-size: 16px; font-family: 'Times New Roman', Times, serif;", "Chargement des données..."),
         tags$div(style = "width: 120px; height: 2px; background-color: #f0f0f0; border-radius: 0; margin-top: 20px; position: relative; overflow: hidden;",
                  tags$div(class = "loading-bar", style = "position: absolute; top: 0; left: 0; height: 100%; width: 30%; background-color: #444444; border-radius: 0; animation: loading 1.5s infinite;"))
@@ -28,8 +27,9 @@ ui <- fluidPage(
   tags$head(
     # Load CSS via CDN for better performance
     tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"),
-    # Import Google Fonts for the sophisticated look - only Libre Baskerville for headings
-    tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap"),
+    # Import Google Fonts with lazy loading
+    tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap", 
+              media = "print", onload = "this.media='all'"),
     
     # Directly embed CSS in the UI instead of linking to external file
     tags$style(HTML("
@@ -368,6 +368,226 @@ ui <- fluidPage(
           grid-template-columns: 1fr !important;
         }
       }
+      
+      /* Styles pour la légende des partis - Version améliorée */
+      .party-legend-container {
+      margin-top: 25px;
+      padding: 15px 0;
+      border-top: 1px solid #eeeeee;
+      }
+      
+      .party-legend-title {
+      font-size: 15px;
+      margin-bottom: 15px;
+      font-family: 'Libre Baskerville', Georgia, serif;
+      text-align: center;
+      color: #333;
+      }
+      
+      .party-labels {
+      display: flex;
+      justify-content: space-between;
+      margin: 0 0 15px 0;
+      }
+      
+      .party-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 500;
+      color: #666666;
+      line-height: 1.3;
+      letter-spacing: 0.02em;
+      }
+      
+      .party-label.left {
+      text-align: left;
+      }
+      
+      .party-label.right {
+      text-align: right;
+      }
+      
+      /* Styles pour les gradients des partis */
+      .party-gradients-container {
+      margin-top: 15px;
+      }
+      
+      .party-gradient-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px; 
+      }
+      
+      .party-name {
+      font-size: 12px;
+      font-weight: 500;
+      margin-right: 15px;
+      width: 40px;
+      color: #444;
+      }
+      
+      .party-gradient-bar {
+      height: 6px; /* Plus fin pour plus d'élégance */
+      flex-grow: 1;
+      border-radius: 3px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      position: relative;
+      overflow: hidden;
+      }
+      
+      /* Reflet pour effet glossy sur les barres */
+      .party-gradient-bar:after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50%;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.2), rgba(255,255,255,0));
+      border-radius: 3px 3px 0 0;
+      }
+      
+      /* Styles pour la légende Battlefields */
+      .battlefield-legend-container {
+      margin-top: 25px;
+      padding: 15px 0;
+      border-top: 1px solid #eeeeee;
+      }
+      
+      .bf-legend-title {
+      font-size: 15px;
+      margin-bottom: 15px;
+      font-family: 'Libre Baskerville', Georgia, serif;
+      text-align: center;
+      color: #333;
+      }
+      
+      .battlefield-gradient-bar {
+      height: 6px; /* Plus fin */
+      width: 100%;
+      margin: 0 auto 5px auto;
+      background: linear-gradient(to right, black 0%, #333333 20%, white 50%, #FFDD55 80%, #FFCC00 100%);
+      position: relative;
+      border-radius: 3px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      }
+      
+      .battlefield-gradient-bar:after {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: 50%;
+      height: 12px;
+      width: 1px;
+      background-color: #777777;
+      }
+      
+      .battlefield-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      }
+      
+      .bf-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 500;
+      color: #666666;
+      line-height: 1.3;
+      letter-spacing: 0.02em;
+      }
+      
+      .bf-label.left {
+      text-align: left;
+      }
+      
+      .bf-label.right {
+      text-align: right;
+      }
+      
+      /* Styles pour la section Sources de données */
+      .data-sources-container {
+        margin-top: 25px;
+        padding: 15px 0;
+        border-top: 1px solid #eeeeee;
+      }
+      
+      .sources-title {
+        font-size: 15px;
+        margin-bottom: 15px;
+        font-family: 'Libre Baskerville', Georgia, serif;
+        text-align: center;
+        color: #333;
+      }
+      
+      .sources-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .source-item {
+        text-align: center;
+      }
+      
+      .source-item a {
+        color: #444;
+        text-decoration: none;
+        font-size: 14px;
+        transition: color 0.2s;
+      }
+      
+      .source-item a:hover {
+        color: #0e2c68;
+        text-decoration: underline;
+      }
+      
+      .title-container {
+        background-color: #ffffff;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
+        border-radius: 2px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e6e6e6;
+        text-align: center;
+      }
+      
+      .main-title {
+        font-family: 'Libre Baskerville', Georgia, serif;
+        font-size: 32px;
+        font-weight: 700;
+        color: #222222;
+        margin: 0;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+      }
+      
+      .shrug-icon {
+        font-family: sans-serif;
+        font-weight: 700; /* Bold */
+        font-size: 1.1em; /* Plus grand que le texte normal */
+        display: inline-block;
+        margin-left: 8px;
+      }
+      
+      .subtitle {
+        font-family: 'Libre Baskerville', Georgia, serif;
+        font-size: 22px;
+        font-weight: 400;
+        color: #444444;
+        margin: 10px 0 0 0;
+        line-height: 1.4;
+      }
+      
+      @media (max-width: 768px) {
+        .main-title {
+          font-size: 26px;
+        }
+        
+        .subtitle {
+          font-size: 18px;
+        }
+      }
     "))
   ),
   
@@ -400,304 +620,80 @@ ui <- fluidPage(
                   choices = c("Tous les partis", "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
                   selected = "Tous les partis"),
       
-
-conditionalPanel(
-  condition = "input.partyPrediction != 'Battlefields'",
-  div(class = "party-legend-container",
-    h4("Solidité des avances", class = "party-legend-title"),
-    
-    # Légende textuelle
-    div(class = "party-labels",
-      div(class = "party-label left", "CIRCONSCRIPTION", br(), "COMPÉTITIVE"),
-      div(class = "party-label right", "AVANCE", br(), "CONSOLIDÉE")
-    ),
-    
-    # Légende minimaliste avec gradients pour chaque parti - GP retiré
-    div(class = "party-gradients-container",
-      lapply(c("LPC", "CPC", "NDP", "BQ"), function(party) {
-        div(class = "party-gradient-row",
-          span(class = "party-name", party),
-          div(class = "party-gradient-bar", 
-              style = paste0("background: linear-gradient(to right, ", 
-                            ifelse(party == "LPC", "#d71920", 
-                              ifelse(party == "CPC", "#0e2c68", 
-                                ifelse(party == "NDP", "#f58220", 
-                                  "#29b2e6"
-                                )
-                              )
-                            ), "20 0%, ", 
-                            ifelse(party == "LPC", "#d71920", 
-                              ifelse(party == "CPC", "#0e2c68", 
-                                ifelse(party == "NDP", "#f58220", 
-                                  "#29b2e6"
-                                )
-                              )
-                            ), "60 50%, ", 
-                            ifelse(party == "LPC", "#d71920", 
-                              ifelse(party == "CPC", "#0e2c68", 
-                                ifelse(party == "NDP", "#f58220", 
-                                  "#29b2e6"
-                                )
-                              )
-                            ), " 100%);"))
-        )
-      })
-    )
-  )
-),
-
-# Légende spécifique au mode Battlefields - réintégrée
-conditionalPanel(
-  condition = "input.partyPrediction == 'Battlefields'",
-  div(class = "battlefield-legend-container",
-    h4("Compétitivité des circonscriptions", class = "bf-legend-title"),
-    div(class = "battlefield-gradient-bar"),
-    div(class = "battlefield-labels",
-      div(class = "bf-label left", "MOINS", br(), "COMPÉTITIF"),
-      div(class = "bf-label right", "PLUS", br(), "COMPÉTITIF")
-    )
-  )
-),
-
-# Style CSS pour les légendes
-tags$style(HTML("
-/* Styles pour la légende des partis - Version améliorée */
-.party-legend-container {
-margin-top: 25px;
-padding: 15px 0;
-border-top: 1px solid #eeeeee;
-}
-
-.party-legend-title {
-font-size: 15px;
-margin-bottom: 15px;
-font-family: 'Libre Baskerville', Georgia, serif;
-text-align: center;
-color: #333;
-}
-
-.party-labels {
-display: flex;
-justify-content: space-between;
-margin: 0 0 15px 0;
-}
-
-.party-label {
-font-size: 10px;
-text-transform: uppercase;
-font-weight: 500;
-color: #666666;
-line-height: 1.3;
-letter-spacing: 0.02em;
-}
-
-.party-label.left {
-text-align: left;
-}
-
-.party-label.right {
-text-align: right;
-}
-
-/* Styles pour les gradients des partis */
-.party-gradients-container {
-margin-top: 15px;
-}
-
-.party-gradient-row {
-display: flex;
-align-items: center;
-margin-bottom: 8px; 
-}
-
-.party-name {
-font-size: 12px;
-font-weight: 500;
-margin-right: 15px;
-width: 40px;
-color: #444;
-}
-
-.party-gradient-bar {
-height: 6px; /* Plus fin pour plus d'élégance */
-flex-grow: 1;
-border-radius: 3px;
-box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-position: relative;
-overflow: hidden;
-}
-
-/* Reflet pour effet glossy sur les barres */
-.party-gradient-bar:after {
-content: '';
-position: absolute;
-top: 0;
-left: 0;
-right: 0;
-height: 50%;
-background: linear-gradient(to bottom, rgba(255,255,255,0.2), rgba(255,255,255,0));
-border-radius: 3px 3px 0 0;
-}
-
-/* Styles pour la légende Battlefields */
-.battlefield-legend-container {
-margin-top: 25px;
-padding: 15px 0;
-border-top: 1px solid #eeeeee;
-}
-
-.bf-legend-title {
-font-size: 15px;
-margin-bottom: 15px;
-font-family: 'Libre Baskerville', Georgia, serif;
-text-align: center;
-color: #333;
-}
-
-.battlefield-gradient-bar {
-height: 6px; /* Plus fin */
-width: 100%;
-margin: 0 auto 5px auto;
-background: linear-gradient(to right, black 0%, #333333 20%, white 50%, #FFDD55 80%, #FFCC00 100%);
-position: relative;
-border-radius: 3px;
-box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-.battlefield-gradient-bar:after {
-content: '';
-position: absolute;
-top: -3px;
-left: 50%;
-height: 12px;
-width: 1px;
-background-color: #777777;
-}
-
-.battlefield-labels {
-display: flex;
-justify-content: space-between;
-margin-top: 10px;
-}
-
-.bf-label {
-font-size: 10px;
-text-transform: uppercase;
-font-weight: 500;
-color: #666666;
-line-height: 1.3;
-letter-spacing: 0.02em;
-}
-
-.bf-label.left {
-text-align: left;
-}
-
-.bf-label.right {
-text-align: right;
-}
-
-/* Styles pour la section Sources de données */
-.data-sources-container {
-  margin-top: 25px;
-  padding: 15px 0;
-  border-top: 1px solid #eeeeee;
-}
-
-.sources-title {
-  font-size: 15px;
-  margin-bottom: 15px;
-  font-family: 'Libre Baskerville', Georgia, serif;
-  text-align: center;
-  color: #333;
-}
-
-.sources-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.source-item {
-  text-align: center;
-}
-
-.source-item a {
-  color: #444;
-  text-decoration: none;
-  font-size: 14px;
-  transition: color 0.2s;
-}
-
-.source-item a:hover {
-  color: #0e2c68;
-  text-decoration: underline;
-}
-
-.title-container {
-  background-color: #ffffff;
-  padding: 1.5rem 2rem;
-  margin-bottom: 1.5rem;
-  border-radius: 2px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e6e6e6;
-  text-align: center;
-}
-
-.main-title {
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: 32px;
-  font-weight: 700;
-  color: #222222;
-  margin: 0;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-}
-
-.shrug-icon {
-  font-family: sans-serif;
-  font-weight: 700; /* Bold */
-  font-size: 1.1em; /* Plus grand que le texte normal */
-  display: inline-block;
-  margin-left: 8px;
-}
-
-.subtitle {
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: 22px;
-  font-weight: 400;
-  color: #444444;
-  margin: 10px 0 0 0;
-  line-height: 1.4;
-}
-
-@media (max-width: 768px) {
-  .main-title {
-    font-size: 26px;
-  }
-  
-  .subtitle {
-    font-size: 18px;
-  }
-}
-
-")),
       
-# Section "Source de données"
-div(class = "data-sources-container",
-    h4("Lien vers les données", class = "sources-title"),
-    div(class = "sources-list",
-        div(class = "source-item",
-            a(href = "https://www.voxpoplabs.com/thesignal", target = "_blank", "The Signal")
-        ),
-        div(class = "source-item",
-            a(href = "https://338canada.com", target = "_blank", "Canada 338")
-        ),
-        div(class = "source-item",
-            a(href = "https://www.poliwave.com", target = "_blank", "Poliwave")
+      conditionalPanel(
+        condition = "input.partyPrediction != 'Battlefields'",
+        div(class = "party-legend-container",
+            h4("Solidité des avances", class = "party-legend-title"),
+            
+            # Légende textuelle
+            div(class = "party-labels",
+                div(class = "party-label left", "CIRCONSCRIPTION", br(), "COMPÉTITIVE"),
+                div(class = "party-label right", "AVANCE", br(), "CONSOLIDÉE")
+            ),
+            
+            # Légende minimaliste avec gradients pour chaque parti - GP retiré
+            div(class = "party-gradients-container",
+                lapply(c("LPC", "CPC", "NDP", "BQ"), function(party) {
+                  div(class = "party-gradient-row",
+                      span(class = "party-name", party),
+                      div(class = "party-gradient-bar", 
+                          style = paste0("background: linear-gradient(to right, ", 
+                                         ifelse(party == "LPC", "#d71920", 
+                                                ifelse(party == "CPC", "#0e2c68", 
+                                                       ifelse(party == "NDP", "#f58220", 
+                                                              "#29b2e6"
+                                                       )
+                                                )
+                                         ), "20 0%, ", 
+                                         ifelse(party == "LPC", "#d71920", 
+                                                ifelse(party == "CPC", "#0e2c68", 
+                                                       ifelse(party == "NDP", "#f58220", 
+                                                              "#29b2e6"
+                                                       )
+                                                )
+                                         ), "60 50%, ", 
+                                         ifelse(party == "LPC", "#d71920", 
+                                                ifelse(party == "CPC", "#0e2c68", 
+                                                       ifelse(party == "NDP", "#f58220", 
+                                                              "#29b2e6"
+                                                       )
+                                                )
+                                         ), " 100%);"))
+                  )
+                })
+            )
         )
-    )
-),
+      ),
+      
+      # Légende spécifique au mode Battlefields - réintégrée
+      conditionalPanel(
+        condition = "input.partyPrediction == 'Battlefields'",
+        div(class = "battlefield-legend-container",
+            h4("Compétitivité des circonscriptions", class = "bf-legend-title"),
+            div(class = "battlefield-gradient-bar"),
+            div(class = "battlefield-labels",
+                div(class = "bf-label left", "MOINS", br(), "COMPÉTITIF"),
+                div(class = "bf-label right", "PLUS", br(), "COMPÉTITIF")
+            )
+        )
+      ),
+      
+      # Section "Source de données"
+      div(class = "data-sources-container",
+          h4("Lien vers les données", class = "sources-title"),
+          div(class = "sources-list",
+              div(class = "source-item",
+                  a(href = "https://www.voxpoplabs.com/thesignal", target = "_blank", "The Signal")
+              ),
+              div(class = "source-item",
+                  a(href = "https://338canada.com", target = "_blank", "Canada 338")
+              ),
+              div(class = "source-item",
+                  a(href = "https://www.poliwave.com", target = "_blank", "Poliwave")
+              )
+          )
+      ),
       # Information section at bottom of sidebar
       div(class = "sidebar-footer",
           p("Données mises à jour: Mars 2025"),
@@ -714,12 +710,12 @@ div(class = "data-sources-container",
       HTML('
 <div class="title-container">
   <h1 class="main-title">Agrégateur d\'agrégateurs <span class="shrug-icon">¯\\_(ツ)_/¯</span></h1>
-'),
+</div>
+      '),
       
       # Canada map at the top with container and section header
       div(class = "map-container",
           style = "margin-bottom: 20px; background: white; padding: 15px; border: 1px solid #e6e6e6; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);",
-#          h4("Carte du Canada", class = "section-header"),
           withSpinner(
             girafeOutput("mapPlot", height = "500px"),
             color = "#555555", type = 8, size = 0.8
@@ -729,11 +725,10 @@ div(class = "data-sources-container",
       # City maps grid (2x4) - always visible now
       div(id = "city-maps-container", class = "city-maps-container",
           style = "margin-bottom: 20px; background: white; padding: 15px; border: 1px solid #e6e6e6; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);",
-#          h4("Cartes électorales des grandes villes", class = "section-header"),
           # 2x4 grid layout for city maps
           div(class = "city-maps-grid",
               style = "display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 20px;",
-                    
+              
               # Row 1 cities
               div(class = "city-map-box",
                   girafeOutput("montrealMap", height = "180px"),
@@ -775,7 +770,6 @@ div(class = "data-sources-container",
       # Data table at the bottom
       div(class = "table-container",
           style = "margin-bottom: 20px; background: white; padding: 15px; border: 1px solid #e6e6e6; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);",
-#          h4("Résultats par circonscription", class = "section-header"),
           withSpinner(
             dataTableOutput("dataTable"),
             color = "#555555", type = 8, size = 0.8
