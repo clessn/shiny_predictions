@@ -559,111 +559,6 @@ server <- function(input, output, session) {
   })
   
   # Render data table
-<<<<<<< HEAD
-  # Render data table
-  output$dataTable <- renderDataTable({
-    # Use the reactive table data
-    display_data <- table_data()
-    
-    # Only create the datatable when we have data
-    req(nrow(display_data) > 0)
-    
-    # Special color styling for Battlefields mode
-    if (input$partyPrediction == "Battlefields") {
-      # Get margins as numeric for battlefields coloring
-      numeric_margins <- as.numeric(gsub("%", "", display_data$Marge))
-      
-      # Calculate color intensity for each row
-      battlefield_colors <- sapply(numeric_margins, function(margin) {
-        # Create gradient: yellow (100) -> white (50) -> black (0)
-        intensity <- pmin(100, pmax(0, 100 - (margin * 4)))
-        
-        if (intensity <= 50) {
-          # Black to White gradient
-          val <- (intensity / 50) * 255
-          r <- val
-          g <- val
-          b <- val
-        } else {
-          # White to Yellow (#FFCC00) gradient
-          r <- 255
-          g <- 255 - ((intensity - 50) / 50) * (255 - 204)
-          b <- 255 - ((intensity - 50) / 50) * 255
-        }
-        
-        return(rgb(r, g, b, maxColorValue = 255))
-      })
-      
-      # Create text colors array (white for dark backgrounds, black for light backgrounds)
-      text_colors <- sapply(numeric_margins, function(margin) {
-        intensity <- pmin(100, pmax(0, 100 - (margin * 4)))
-        # Use white text if background is dark (intensity > 65)
-        if (intensity > 65) {
-          return("#000000") # White text
-        } else {
-          return("#FFFFFF") # Black text
-        }
-      })
-    }
-    
-    # Return the data with improved formatting
-    dt <- datatable(
-      display_data,
-      options = list(
-        pageLength = 10,
-        autoWidth = FALSE,
-        searchHighlight = TRUE,
-        dom = '<"top"f>rt<"bottom"ip>',
-        language = list(
-          search = t("search"),
-          paginate = list(previous = t("previous"), `next` = t("next"))
-        ),
-        scrollX = TRUE,
-        # Only define essential column defs
-        columnDefs = list(
-          list(className = 'dt-center', targets = "_all"),
-          # Ajouter un columnDef pour traiter la colonne Marge numériquement
-          list(
-            targets = 5,  # Index de la colonne "Marge" (en supposant qu'elle est à l'index 5)
-            type = 'num'  # Définir le type comme numérique
-          )
-        ),
-        order = if(input$partyPrediction == "Battlefields") list(list(5, 'asc')) else NULL
-      ),
-      rownames = FALSE,
-      class = 'cell-border stripe compact'
-    ) %>%
-      formatStyle(
-        columns = colnames(display_data),
-        backgroundColor = "white",
-        color = "black"
-      )
-    
-    # Apply specific styling based on mode
-    if (input$partyPrediction == "Battlefields") {
-      # For Battlefields, color the Marge column with the battlefield gradient
-      # and adjust text color to ensure readability
-      dt <- dt %>% formatStyle(
-        columns = "Marge",
-        backgroundColor = styleEqual(display_data$Marge, battlefield_colors),
-        color = styleEqual(display_data$Marge, text_colors)
-      )
-    } else {
-      # For other modes, color the party column
-      dt <- dt %>% formatStyle(
-        columns = "Parti en tête",
-        backgroundColor = styleEqual(
-          names(party_colors),
-          sapply(party_colors, function(color) {
-            paste0(color, "25")  # Add transparency to the color
-          })
-        )
-      )
-    }
-    
-    return(dt)
-  })
-=======
   output$dataTable <- renderDataTable({
    # Use the reactive table data
    display_data <- table_data()
@@ -804,7 +699,6 @@ server <- function(input, output, session) {
    
    return(dt)
  })
->>>>>>> 3d28330b424d92572eae5ea7bf7fd6845679984a
   
   # Clear cache when major inputs change
   observeEvent(list(input$partyPrediction, rv$lang()), {
