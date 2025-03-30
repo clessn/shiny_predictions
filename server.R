@@ -17,6 +17,19 @@ server <- function(input, output, session) {
   # Initialize reactive values for data storage
   rv <- reactiveValues()
   
+  # Initialize language (default to French)
+  rv$lang <- reactiveVal("fr")
+  
+  # Toggle language when the language button is clicked
+  observeEvent(input$toggleLang, {
+    rv$lang(ifelse(rv$lang() == "fr", "en", "fr"))
+  })
+  
+  # Translation helper function
+  t <- function(key) {
+    translations[[rv$lang()]][[key]]
+  }
+  
   # Charger les données pondérées
   rv$donnees_sondage <- readRDS("data/donnees_sondage_ponderees.rds")
   
@@ -26,10 +39,13 @@ server <- function(input, output, session) {
   # Store current city code in a reactive value for other functions to use
   current_city_code <- reactiveVal()
   
-  # Update UI choices to include "All parties" as default
-  updateSelectInput(session, "partyPrediction", 
-                    choices = c("Tous les partis", "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
-                    selected = "Tous les partis")
+  # Update UI choices based on language
+  observe({
+    updateSelectInput(session, "partyPrediction", 
+                    label = t("party_prediction"),
+                    choices = c(t("all_parties"), "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
+                    selected = input$partyPrediction)
+  })
   
   # Calculate base data processing avec les données pondérées
   rv$processed_data <- reactive({
@@ -107,14 +123,17 @@ server <- function(input, output, session) {
         ),
         # Calculate battlefield intensity for the gradient (0-100 scale)
         battlefield_intensity = pmin(100, pmax(0, 100 - (closeness * 4))),
-        # Utiliser directement name_riding_fr pour le hover
+        # Create tooltip text based on current language
         tooltip_text = paste0(
           "<strong>", name_riding_fr, "</strong><br>",
-          "Parti en tête: <span style='color:", party_colors[party], ";'>", 
+          ifelse(rv$lang() == "fr", "Parti en tête: ", "Leading party: "),
+          "<span style='color:", party_colors[party], ";'>", 
           party, " (", round(first_party_percentage, 1), "%)</span><br>",
-          "Second parti: <span style='color:", party_colors[second_party], ";'>", 
+          ifelse(rv$lang() == "fr", "Second parti: ", "Second party: "),
+          "<span style='color:", party_colors[second_party], ";'>", 
           second_party, " (", round(second_party_percentage, 1), "%)</span><br>",
-          "Écart: ", round(closeness, 1), "%"
+          ifelse(rv$lang() == "fr", "Écart: ", "Margin: "), 
+          round(closeness, 1), "%"
         )
       )
     
@@ -187,7 +206,7 @@ server <- function(input, output, session) {
         scale_fill_manual(
           values = party_colors,
           name = "Winning Party",
-          labels = function(x) paste0(party_names[x], " (", x, ")"),
+          labels = function(x) paste0(party_names[[rv$lang()]][x], " (", x, ")"),
           na.value = "#777777"
         ) +
         scale_alpha_identity()
@@ -375,6 +394,7 @@ server <- function(input, output, session) {
                         color = "#333333", linewidth = 0.3) +
                 scale_fill_manual(
                   values = party_colors,
+                  labels = function(x) paste0(party_names[[rv$lang()]][x], " (", x, ")"),
                   na.value = "#777777"
                 ) +
                 scale_alpha_identity()
@@ -466,13 +486,26 @@ server <- function(input, output, session) {
       ) %>%
       # Rename columns for display
       select(
-        # Change this line to use riding_name instead of riding
-        "Circonscription" = riding_name,
-        "Parti en tête" = party,
-        "Pourcentage" = first_party_pct,
-        "Second parti" = second_party,
-        "Pourcentage (2e)" = second_party_pct,
-        "Marge" = margin
+        # Use dynamic column names based on current language
+        if (rv$lang() == "fr") {
+          c(
+            "Circonscription" = "riding_name",
+            "Parti en tête" = "party",
+            "Pourcentage" = "first_party_pct",
+            "Second parti" = "second_party",
+            "Pourcentage (2e)" = "second_party_pct",
+            "Marge" = "margin"
+          )
+        } else {
+          c(
+            "Riding" = "riding_name",
+            "Leading party" = "party",
+            "Percentage" = "first_party_pct",
+            "Second party" = "second_party",
+            "Second percentage" = "second_party_pct",
+            "Margin" = "margin"
+          )
+        }
       )
   })
   
@@ -532,8 +565,8 @@ server <- function(input, output, session) {
       searchHighlight = TRUE,
       dom = '<"top"f>rt<"bottom"ip>',
       language = list(
-        search = "Rechercher:",
-        paginate = list(previous = "Précédent", `next` = "Suivant")
+        search = t("search"),
+        paginate = list(previous = t("previous"), `next` = t("next"))
       ),
       scrollX = TRUE,
       # Only define essential column defs
@@ -582,9 +615,35 @@ server <- function(input, output, session) {
 })
   
   # Clear cache when major inputs change
-  observeEvent(list(input$partyPrediction), {
+  observeEvent(list(input$partyPrediction, rv$lang()), {
     for (key in names(city_data_cache)) {
       city_data_cache[[key]] <- NULL
     }
   }, ignoreInit = TRUE)  # Ignore initial values to avoid clearing cache at startup
+  
+  # Output text elements for UI based on current language
+  output$modelTypeLabel <- renderText({ t("model_type") })
+  output$modelTypeValue <- renderText({ t("app_title") })
+  output$partyPredictionLabel <- renderText({ t("party_prediction") })
+  output$leadStrengthTitle <- renderText({ t("lead_strength") })
+  output$competitiveRidingLabel <- renderUI({ HTML(gsub("\n", "<br>", t("riding_competitive"))) })
+  output$consolidatedLeadLabel <- renderUI({ HTML(gsub("\n", "<br>", t("consolidated_lead"))) })
+  output$competitivenessTitle <- renderText({ t("competitiveness") })
+  output$lessCompetitiveLabel <- renderUI({ HTML(gsub("\n", "<br>", t("less_competitive"))) })
+  output$moreCompetitiveLabel <- renderUI({ HTML(gsub("\n", "<br>", t("more_competitive"))) })
+  output$dataLinkLabel <- renderText({ t("data_link") })
+  output$dataUpdatedText <- renderText({ t("data_updated") })
+  output$respondentsText <- renderText({ paste0(t("respondents"), nrow(readRDS("data/datagotchi2025_canada_app_20250318.rds"))) })
+  output$hoverInfoText <- renderUI({ HTML(paste0("<i class='fas fa-info-circle'></i> ", t("hover_info"))) })
+  output$appTitle <- renderUI({ HTML(t("app_title")) })
+  
+  # City names based on current language
+  output$montrealTitle <- renderText({ city_names[[rv$lang()]]["montreal"] })
+  output$torontoTitle <- renderText({ city_names[[rv$lang()]]["toronto"] })
+  output$vancouverTitle <- renderText({ city_names[[rv$lang()]]["vancouver"] })
+  output$quebecCityTitle <- renderText({ city_names[[rv$lang()]]["quebec_city"] })
+  output$ottawaTitle <- renderText({ city_names[[rv$lang()]]["ottawa_gatineau"] })
+  output$winnipegTitle <- renderText({ city_names[[rv$lang()]]["winnipeg"] })
+  output$kitchenerTitle <- renderText({ city_names[[rv$lang()]]["kitchener_waterloo"] })
+  output$londonTitle <- renderText({ city_names[[rv$lang()]]["london"] })
 }

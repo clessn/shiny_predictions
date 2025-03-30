@@ -105,17 +105,106 @@ party_colors <- c(
   "GP" = "#39D353"   # Green Party - Green
 )
 
-# Define party names for labels
-party_names <- c(
-  "LPC" = "Liberal", 
-  "CPC" = "Conservative", 
-  "NDP" = "New Democratic",
-  "BQ" = "Bloc Québécois",
-  "GP" = "Green"
+# Define party names for labels (English and French versions)
+party_names <- list(
+  "en" = c(
+    "LPC" = "Liberal", 
+    "CPC" = "Conservative", 
+    "NDP" = "New Democratic",
+    "BQ" = "Bloc Québécois",
+    "GP" = "Green"
+  ),
+  "fr" = c(
+    "LPC" = "Libéral", 
+    "CPC" = "Conservateur", 
+    "NDP" = "Nouveau Démocratique",
+    "BQ" = "Bloc Québécois",
+    "GP" = "Vert"
+  )
 )
 
 # Define Canadian political parties
 partis_politiques <- c("LPC", "CPC", "BQ", "NDP", "GP")
+
+# Dictionary for translations
+translations <- list(
+  "fr" = list(
+    "loading" = "Chargement des données...",
+    "app_title" = "Agrégateur d'agrégateurs",
+    "model_type" = "Type de modèle:",
+    "party_prediction" = "Prédiction par parti:",
+    "all_parties" = "Tous les partis",
+    "lead_strength" = "Solidité des avances",
+    "riding_competitive" = "CIRCONSCRIPTION\nCOMPÉTITIVE",
+    "consolidated_lead" = "AVANCE\nCONSOLIDÉE",
+    "competitiveness" = "Compétitivité des circonscriptions",
+    "less_competitive" = "MOINS\nCOMPÉTITIF",
+    "more_competitive" = "PLUS\nCOMPÉTITIF",
+    "data_link" = "Lien vers les données",
+    "data_updated" = "Données mises à jour: Mars 2025",
+    "respondents" = "Nombre de répondants : ",
+    "hover_info" = "Survolez sur les cartes pour plus de détails",
+    "riding" = "Circonscription",
+    "leading_party" = "Parti en tête",
+    "percentage" = "Pourcentage",
+    "second_party" = "Second parti",
+    "second_percentage" = "Pourcentage (2e)",
+    "margin" = "Marge",
+    "search" = "Rechercher:",
+    "previous" = "Précédent",
+    "next" = "Suivant"
+  ),
+  "en" = list(
+    "loading" = "Loading data...",
+    "app_title" = "Aggregator of Aggregators",
+    "model_type" = "Model type:",
+    "party_prediction" = "Prediction by party:",
+    "all_parties" = "All parties",
+    "lead_strength" = "Lead strength",
+    "riding_competitive" = "COMPETITIVE\nRIDING",
+    "consolidated_lead" = "CONSOLIDATED\nLEAD",
+    "competitiveness" = "Riding competitiveness",
+    "less_competitive" = "LESS\nCOMPETITIVE",
+    "more_competitive" = "MORE\nCOMPETITIVE",
+    "data_link" = "Data links",
+    "data_updated" = "Data updated: March 2025",
+    "respondents" = "Number of respondents: ",
+    "hover_info" = "Hover over maps for more details",
+    "riding" = "Riding",
+    "leading_party" = "Leading party",
+    "percentage" = "Percentage",
+    "second_party" = "Second party",
+    "second_percentage" = "Second percentage",
+    "margin" = "Margin",
+    "search" = "Search:",
+    "previous" = "Previous",
+    "next" = "Next"
+  )
+)
+
+# List of bilingual city names (both English and French)
+city_names <- list(
+  "fr" = c(
+    "montreal" = "Montréal",
+    "toronto" = "Toronto",
+    "vancouver" = "Vancouver",
+    "quebec_city" = "Ville de Québec",
+    "ottawa_gatineau" = "Ottawa-Gatineau",
+    "winnipeg" = "Winnipeg",
+    "kitchener_waterloo" = "Kitchener-Waterloo",
+    "london" = "London"
+  ),
+  "en" = c(
+    "montreal" = "Montreal",
+    "toronto" = "Toronto",
+    "vancouver" = "Vancouver",
+    "quebec_city" = "Quebec City",
+    "ottawa_gatineau" = "Ottawa-Gatineau",
+    "winnipeg" = "Winnipeg",
+    "kitchener_waterloo" = "Kitchener-Waterloo",
+    "london" = "London"
+  )
+)
 
 # Function to crop map for a specific city
 crop_map_for_app <- function(spatial_df, city, city_mapping) {

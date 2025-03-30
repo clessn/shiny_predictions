@@ -607,13 +607,19 @@ ui <- fluidPage(
     # Sidebar with controls
     sidebarPanel(
       width = 3,
+      div(style = "text-align: right; margin-bottom: 10px;",
+          actionButton("toggleLang", 
+                       icon = icon("language"),
+                       label = "",
+                       style = "background-color: transparent; border: none; font-size: 18px;")
+      ),
       h3(HTML(""), 
          class = "sidebar-title"),
       
-      # Model type dropdown
-      h4("Type de modèle:", class = "input-title"),
+      # Model type dropdown (with translated text)
+      h4(textOutput("modelTypeLabel"), class = "input-title"),
       div(style = "margin-bottom: 15px;",
-          tags$span("Agrégateur d'agrégateurs", 
+          tags$span(textOutput("modelTypeValue"), 
                     style = paste0(
                       "display: block;",
                       "padding: 10px 12px;",
@@ -627,7 +633,7 @@ ui <- fluidPage(
       ),
       
       # Party prediction dropdown - use original choices to work with server.R
-      h4("Prédiction par parti:", class = "input-title"),
+      h4(textOutput("partyPredictionLabel"), class = "input-title"),
       selectInput("partyPrediction", NULL,
                   choices = c("Tous les partis", "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
                   selected = "Tous les partis"),
@@ -636,12 +642,12 @@ ui <- fluidPage(
       conditionalPanel(
         condition = "input.partyPrediction != 'Battlefields'",
         div(class = "party-legend-container",
-            h4("Solidité des avances", class = "party-legend-title"),
+            h4(textOutput("leadStrengthTitle"), class = "party-legend-title"),
             
             # Légende textuelle
             div(class = "party-labels",
-                div(class = "party-label left", "CIRCONSCRIPTION", br(), "COMPÉTITIVE"),
-                div(class = "party-label right", "AVANCE", br(), "CONSOLIDÉE")
+                div(class = "party-label left", htmlOutput("competitiveRidingLabel")),
+                div(class = "party-label right", htmlOutput("consolidatedLeadLabel"))
             ),
             
             # Légende minimaliste avec gradients pour chaque parti - GP retiré
@@ -682,18 +688,18 @@ ui <- fluidPage(
       conditionalPanel(
         condition = "input.partyPrediction == 'Battlefields'",
         div(class = "battlefield-legend-container",
-            h4("Compétitivité des circonscriptions", class = "bf-legend-title"),
+            h4(textOutput("competitivenessTitle"), class = "bf-legend-title"),
             div(class = "battlefield-gradient-bar"),
             div(class = "battlefield-labels",
-                div(class = "bf-label left", "MOINS", br(), "COMPÉTITIF"),
-                div(class = "bf-label right", "PLUS", br(), "COMPÉTITIF")
+                div(class = "bf-label left", htmlOutput("lessCompetitiveLabel")),
+                div(class = "bf-label right", htmlOutput("moreCompetitiveLabel"))
             )
         )
       ),
       
       # Section "Source de données"
       div(class = "data-sources-container",
-          h4("Lien vers les données", class = "sources-title"),
+          h4(textOutput("dataLinkLabel"), class = "sources-title"),
           div(class = "sources-list",
               div(class = "source-item",
                   a(href = "https://www.voxpoplabs.com/thesignal", target = "_blank", "The Signal")
@@ -708,9 +714,9 @@ ui <- fluidPage(
       ),
       # Information section at bottom of sidebar
       div(class = "sidebar-footer",
-          p("Données mises à jour: Mars 2025"),
-          p(paste0("Nombre de répondants : ", nrow(readRDS("data/datagotchi2025_canada_app_20250318.rds")))),
-          p(HTML("<i class='fas fa-info-circle'></i> Survolez sur les cartes pour plus de détails"))
+          p(textOutput("dataUpdatedText")),
+          p(textOutput("respondentsText")),
+          p(htmlOutput("hoverInfoText"))
       )
     ),
     
@@ -719,10 +725,11 @@ ui <- fluidPage(
       width = 9,
       
       # Title
-      HTML('
-<div class="title-container">
-  <h1 class="main-title">Agrégateur d\'agrégateurs <span class="shrug-icon">¯\\_(ツ)_/¯</span></h1>
-      '),
+      div(class = "title-container",
+          h1(class = "main-title", 
+            htmlOutput("appTitle"), 
+            span(class = "shrug-icon", HTML("¯\\_(ツ)_/¯"))
+          )),
       
       # Canada map at the top with container and section header
       div(class = "map-container",
@@ -743,37 +750,37 @@ ui <- fluidPage(
               # Row 1 cities
               div(class = "city-map-box",
                   girafeOutput("montrealMap", height = "180px"),
-                  div(class = "map-title-overlay", "Montreal")
+                  div(class = "map-title-overlay", textOutput("montrealTitle"))
               ),
               div(class = "city-map-box",
                   girafeOutput("torontoMap", height = "180px"),
-                  div(class = "map-title-overlay", "Toronto")
+                  div(class = "map-title-overlay", textOutput("torontoTitle"))
               ),
               div(class = "city-map-box",
                   girafeOutput("vancouverMap", height = "180px"),
-                  div(class = "map-title-overlay", "Vancouver")
+                  div(class = "map-title-overlay", textOutput("vancouverTitle"))
               ),
               div(class = "city-map-box",
                   girafeOutput("quebecCityMap", height = "180px"),
-                  div(class = "map-title-overlay", "Quebec City")
+                  div(class = "map-title-overlay", textOutput("quebecCityTitle"))
               ),
               
               # Row 2 cities
               div(class = "city-map-box",
                   girafeOutput("ottawaMap", height = "180px"),
-                  div(class = "map-title-overlay", "Ottawa-Gatineau")
+                  div(class = "map-title-overlay", textOutput("ottawaTitle"))
               ),
               div(class = "city-map-box",
                   girafeOutput("winnipegMap", height = "180px"),
-                  div(class = "map-title-overlay", "Winnipeg")
+                  div(class = "map-title-overlay", textOutput("winnipegTitle"))
               ),
               div(class = "city-map-box",
                   girafeOutput("kitchenerMap", height = "180px"),
-                  div(class = "map-title-overlay", "Kitchener-Waterloo")
+                  div(class = "map-title-overlay", textOutput("kitchenerTitle"))
               ),
               div(class = "city-map-box",
                   girafeOutput("londonMap", height = "180px"),
-                  div(class = "map-title-overlay", "London")
+                  div(class = "map-title-overlay", textOutput("londonTitle"))
               )
           )
       ),
