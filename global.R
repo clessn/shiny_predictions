@@ -153,7 +153,8 @@ translations <- list(
     "margin" = "Marge",
     "search" = "Rechercher:",
     "previous" = "Précédent",
-    "next" = "Suivant"
+    "next" = "Suivant",
+    "battlefields" = "Champs de bataille"
   ),
   "en" = list(
     "loading" = "Loading data...",
@@ -180,7 +181,8 @@ translations <- list(
     "margin" = "Margin",
     "search" = "Search:",
     "previous" = "Previous",
-    "next" = "Next"
+    "next" = "Next",
+    "battlefields" = "Battlefields"
   )
 )
 

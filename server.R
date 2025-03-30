@@ -84,12 +84,14 @@ server <- function(input, output, session) {
   # Store current city code in a reactive value for other functions to use
   current_city_code <- reactiveVal()
   
-  # Update UI choices based on language
-  observe({
-    updateSelectInput(session, "partyPrediction", 
-                      label = t("party_prediction"),
-                      choices = c(t("all_parties"), "LPC", "CPC", "BQ", "NDP", "GPC", "Battlefields"),
-                      selected = input$partyPrediction)
+  # Create dynamic UI for party selection based on current language
+  output$partySelectionUI <- renderUI({
+    selectInput(
+      "partyPrediction", 
+      NULL, # Remove the label here since we already have a header above
+      choices = c(t("all_parties"), "LPC", "CPC", "BQ", "NDP", "GPC", t("battlefields")),
+      selected = t("all_parties")
+    )
   })
   
   # New data processing function to work with the simplified dataset
@@ -181,9 +183,9 @@ server <- function(input, output, session) {
       )
     
     # Filter by party if selected
-    if (input$partyPrediction == t("all_parties") || input$partyPrediction == "All parties" || input$partyPrediction == "Tous les partis") {
+    if (input$partyPrediction == t("all_parties")) {
       return(map_filtered)
-    } else if (input$partyPrediction == "Battlefields") {
+    } else if (input$partyPrediction == t("battlefields")) {
       # Now we return ALL ridings but with the battlefield intensity calculated
       return(map_filtered)
     } else if (input$partyPrediction %in% partis_politiques) {
@@ -234,7 +236,7 @@ server <- function(input, output, session) {
     coords <- city_mapping[[city_code]]$coordinates
     
     # Create different plot depending on if we're in battlefield mode
-    if (input$partyPrediction == "Battlefields") {
+    if (input$partyPrediction == t("battlefields")) {
       # Create battlefield gradient map
       p <- ggplot() +
         geom_sf_interactive(data = city_data, 
@@ -317,7 +319,7 @@ server <- function(input, output, session) {
     }
     
     # Create a different map based on whether we're in Battlefields mode
-    if (input$partyPrediction == "Battlefields") {
+    if (input$partyPrediction == t("battlefields")) {
       # Battlefield gradient map (black -> white -> yellow)
       p <- ggplot() +
         geom_sf_interactive(data = plot_data, 
@@ -459,7 +461,7 @@ server <- function(input, output, session) {
             })
             
             # Create city map with different styling based on mode
-            if (input$partyPrediction == "Battlefields") {
+            if (input$partyPrediction == t("battlefields")) {
               # Battlefield gradient map for cities
               p <- ggplot() +
                 geom_sf_interactive(data = city_data, 
@@ -563,10 +565,10 @@ server <- function(input, output, session) {
     df_ridings <- rv$processed_data()
     
     # Apply party filter
-    if (input$partyPrediction == "Battlefields") {
+    if (input$partyPrediction == t("battlefields")) {
       # For Battlefields, show all ridings but sort by win probability (lowest probability first)
       df_ridings <- df_ridings %>% arrange(first_party_percentage)
-    } else if (input$partyPrediction != "All parties" && input$partyPrediction %in% partis_politiques) {
+    } else if (input$partyPrediction %in% partis_politiques) {
       df_ridings <- df_ridings %>% 
         filter(party == input$partyPrediction)
     }
@@ -646,7 +648,7 @@ server <- function(input, output, session) {
    )
    
    # Special color styling for Battlefields mode
-   if (input$partyPrediction == "Battlefields") {
+   if (input$partyPrediction == t("battlefields")) {
      # Get percentages for battlefields coloring
      numeric_probs <- display_data[[percentage_col]]
      
@@ -713,7 +715,7 @@ server <- function(input, output, session) {
          )
        ),
        # In battlefield mode, sort by percentage (ascending = most competitive first)
-       order = if(input$partyPrediction == "Battlefields") list(list(3, 'asc')) else NULL
+       order = if(input$partyPrediction == t("battlefields")) list(list(3, 'asc')) else NULL
      ),
      rownames = FALSE,
      class = 'cell-border stripe compact'
@@ -725,7 +727,7 @@ server <- function(input, output, session) {
      )
    
    # Apply specific styling based on mode
-   if (input$partyPrediction == "Battlefields") {
+   if (input$partyPrediction == t("battlefields")) {
      # For Battlefields, use plain text for certainty column (no background color)
      dt <- dt %>% formatStyle(
        columns = status_col,

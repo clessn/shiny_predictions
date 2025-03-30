@@ -636,15 +636,13 @@ ui <- fluidPage(
           )
       ),
       
-      # Party prediction dropdown - use original choices to work with server.R
+      # Party prediction dropdown
       h4(textOutput("partyPredictionLabel"), class = "input-title"),
-      selectInput("partyPrediction", NULL,
-                  choices = c("Tous les partis", "LPC", "CPC", "BQ", "NDP", "GPC", "Battlefields"),
-                  selected = "Tous les partis"),
+      uiOutput("partySelectionUI"),
       
       
       conditionalPanel(
-        condition = "input.partyPrediction != 'Battlefields'",
+        condition = "input.partyPrediction != 'Battlefields' && input.partyPrediction != 'Champs de bataille'",
         div(class = "party-legend-container",
             h4(textOutput("leadStrengthTitle"), class = "party-legend-title"),
             
@@ -702,7 +700,7 @@ ui <- fluidPage(
       
       # Légende spécifique au mode Battlefields - réintégrée
       conditionalPanel(
-        condition = "input.partyPrediction == 'Battlefields'",
+        condition = "input.partyPrediction == 'Battlefields' || input.partyPrediction == 'Champs de bataille'",
         div(class = "battlefield-legend-container",
             h4(textOutput("competitivenessTitle"), class = "bf-legend-title"),
             div(class = "battlefield-gradient-bar"),
