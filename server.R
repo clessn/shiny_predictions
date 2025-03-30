@@ -42,9 +42,9 @@ server <- function(input, output, session) {
   # Update UI choices based on language
   observe({
     updateSelectInput(session, "partyPrediction", 
-                    label = t("party_prediction"),
-                    choices = c(t("all_parties"), "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
-                    selected = input$partyPrediction)
+                      label = t("party_prediction"),
+                      choices = c(t("all_parties"), "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
+                      selected = input$partyPrediction)
   })
   
   # Calculate base data processing avec les données pondérées
@@ -190,19 +190,19 @@ server <- function(input, output, session) {
       # Create battlefield gradient map
       p <- ggplot() +
         geom_sf_interactive(data = city_data, 
-                aes(fill = battlefield_intensity, tooltip = tooltip_text, data_id = id_riding),
-                color = "#333333", size = 0.3) +
-                scale_fill_gradientn(
-                  colors = c("black", "white", "#FFCC00"),
-                  values = c(0, 0.5, 1),
-                  limits = c(0, 100)
-                )
+                            aes(fill = battlefield_intensity, tooltip = tooltip_text, data_id = id_riding),
+                            color = "#333333", size = 0.3) +
+        scale_fill_gradientn(
+          colors = c("black", "white", "#FFCC00"),
+          values = c(0, 0.5, 1),
+          limits = c(0, 100)
+        )
     } else {
       # Standard party colors map
       p <- ggplot() +
         geom_sf_interactive(data = city_data, 
-                aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
-                color = "#333333", size = 0.3) +
+                            aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                            color = "#333333", size = 0.3) +
         scale_fill_manual(
           values = party_colors,
           name = "Winning Party",
@@ -262,9 +262,9 @@ server <- function(input, output, session) {
     if (!inherits(plot_data, "sf") || nrow(plot_data) == 0) {
       # Return a graphical error message if no valid data
       p <- ggplot() + 
-               annotate("text", x = 0.5, y = 0.5, label = "No valid map data available", size = 6, color = "white") +
-               theme_void() +
-               theme(plot.background = element_rect(fill = "#faf8f2", color = NA))
+        annotate("text", x = 0.5, y = 0.5, label = "No valid map data available", size = 6, color = "white") +
+        theme_void() +
+        theme(plot.background = element_rect(fill = "#faf8f2", color = NA))
       return(girafe(ggobj = p))
     }
     
@@ -273,21 +273,21 @@ server <- function(input, output, session) {
       # Battlefield gradient map (black -> white -> yellow)
       p <- ggplot() +
         geom_sf_interactive(data = plot_data, 
-                aes(fill = battlefield_intensity, tooltip = tooltip_text, data_id = id_riding),
-                color = "#555555", linewidth = 0.25) +
+                            aes(fill = battlefield_intensity, tooltip = tooltip_text, data_id = id_riding),
+                            color = "#555555", linewidth = 0.25) +
         scale_fill_gradientn(
           colors = c("black", "white", "#FFCC00"),
           values = c(0, 0.5, 1),
           limits = c(0, 100),
           name = "Competitiveness",
           guide = "none"
-          )
+        )
     } else {
       # Standard party colors map
       p <- ggplot() +
         geom_sf_interactive(data = plot_data, 
-                aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
-                color = "#777777", linewidth = 0.25) +
+                            aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                            color = "#777777", linewidth = 0.25) +
         scale_fill_manual(
           values = party_colors,
           name = NULL,
@@ -379,8 +379,8 @@ server <- function(input, output, session) {
               # Battlefield gradient map for cities
               p <- ggplot() +
                 geom_sf_interactive(data = city_data, 
-                        aes(fill = battlefield_intensity, tooltip = tooltip_text, data_id = id_riding),
-                        color = "#333333", linewidth = 0.3) +
+                                    aes(fill = battlefield_intensity, tooltip = tooltip_text, data_id = id_riding),
+                                    color = "#333333", linewidth = 0.3) +
                 scale_fill_gradientn(
                   colors = c("black", "white", "#FFCC00"),
                   values = c(0, 0.5, 1),
@@ -390,8 +390,8 @@ server <- function(input, output, session) {
               # Standard party map for cities
               p <- ggplot() +
                 geom_sf_interactive(data = city_data, 
-                        aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
-                        color = "#333333", linewidth = 0.3) +
+                                    aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                                    color = "#333333", linewidth = 0.3) +
                 scale_fill_manual(
                   values = party_colors,
                   labels = function(x) paste0(party_names[[rv$lang()]][x], " (", x, ")"),
@@ -510,109 +510,109 @@ server <- function(input, output, session) {
   })
   
   # Render data table
- # Render data table
- output$dataTable <- renderDataTable({
-  # Use the reactive table data
-  display_data <- table_data()
-  
-  # Only create the datatable when we have data
-  req(nrow(display_data) > 0)
-  
-  # Special color styling for Battlefields mode
-  if (input$partyPrediction == "Battlefields") {
-    # Get margins as numeric for battlefields coloring
-    numeric_margins <- as.numeric(gsub("%", "", display_data$Marge))
+  # Render data table
+  output$dataTable <- renderDataTable({
+    # Use the reactive table data
+    display_data <- table_data()
     
-    # Calculate color intensity for each row
-    battlefield_colors <- sapply(numeric_margins, function(margin) {
-      # Create gradient: yellow (100) -> white (50) -> black (0)
-      intensity <- pmin(100, pmax(0, 100 - (margin * 4)))
-      
-      if (intensity <= 50) {
-        # Black to White gradient
-        val <- (intensity / 50) * 255
-        r <- val
-        g <- val
-        b <- val
-      } else {
-        # White to Yellow (#FFCC00) gradient
-        r <- 255
-        g <- 255 - ((intensity - 50) / 50) * (255 - 204)
-        b <- 255 - ((intensity - 50) / 50) * 255
-      }
-      
-      return(rgb(r, g, b, maxColorValue = 255))
-    })
+    # Only create the datatable when we have data
+    req(nrow(display_data) > 0)
     
-    # Create text colors array (white for dark backgrounds, black for light backgrounds)
-    text_colors <- sapply(numeric_margins, function(margin) {
-      intensity <- pmin(100, pmax(0, 100 - (margin * 4)))
-      # Use white text if background is dark (intensity > 65)
-      if (intensity > 65) {
-        return("#000000") # White text
-      } else {
-        return("#FFFFFF") # Black text
-      }
-    })
-  }
-  
-  # Return the data with improved formatting
-  dt <- datatable(
-    display_data,
-    options = list(
-      pageLength = 10,
-      autoWidth = FALSE,
-      searchHighlight = TRUE,
-      dom = '<"top"f>rt<"bottom"ip>',
-      language = list(
-        search = t("search"),
-        paginate = list(previous = t("previous"), `next` = t("next"))
+    # Special color styling for Battlefields mode
+    if (input$partyPrediction == "Battlefields") {
+      # Get margins as numeric for battlefields coloring
+      numeric_margins <- as.numeric(gsub("%", "", display_data$Marge))
+      
+      # Calculate color intensity for each row
+      battlefield_colors <- sapply(numeric_margins, function(margin) {
+        # Create gradient: yellow (100) -> white (50) -> black (0)
+        intensity <- pmin(100, pmax(0, 100 - (margin * 4)))
+        
+        if (intensity <= 50) {
+          # Black to White gradient
+          val <- (intensity / 50) * 255
+          r <- val
+          g <- val
+          b <- val
+        } else {
+          # White to Yellow (#FFCC00) gradient
+          r <- 255
+          g <- 255 - ((intensity - 50) / 50) * (255 - 204)
+          b <- 255 - ((intensity - 50) / 50) * 255
+        }
+        
+        return(rgb(r, g, b, maxColorValue = 255))
+      })
+      
+      # Create text colors array (white for dark backgrounds, black for light backgrounds)
+      text_colors <- sapply(numeric_margins, function(margin) {
+        intensity <- pmin(100, pmax(0, 100 - (margin * 4)))
+        # Use white text if background is dark (intensity > 65)
+        if (intensity > 65) {
+          return("#000000") # White text
+        } else {
+          return("#FFFFFF") # Black text
+        }
+      })
+    }
+    
+    # Return the data with improved formatting
+    dt <- datatable(
+      display_data,
+      options = list(
+        pageLength = 10,
+        autoWidth = FALSE,
+        searchHighlight = TRUE,
+        dom = '<"top"f>rt<"bottom"ip>',
+        language = list(
+          search = t("search"),
+          paginate = list(previous = t("previous"), `next` = t("next"))
+        ),
+        scrollX = TRUE,
+        # Only define essential column defs
+        columnDefs = list(
+          list(className = 'dt-center', targets = "_all"),
+          # Ajouter un columnDef pour traiter la colonne Marge numériquement
+          list(
+            targets = 5,  # Index de la colonne "Marge" (en supposant qu'elle est à l'index 5)
+            type = 'num'  # Définir le type comme numérique
+          )
+        ),
+        order = if(input$partyPrediction == "Battlefields") list(list(5, 'asc')) else NULL
       ),
-      scrollX = TRUE,
-      # Only define essential column defs
-      columnDefs = list(
-        list(className = 'dt-center', targets = "_all"),
-        # Ajouter un columnDef pour traiter la colonne Marge numériquement
-        list(
-          targets = 5,  # Index de la colonne "Marge" (en supposant qu'elle est à l'index 5)
-          type = 'num'  # Définir le type comme numérique
-        )
-      ),
-      order = if(input$partyPrediction == "Battlefields") list(list(5, 'asc')) else NULL
-    ),
-    rownames = FALSE,
-    class = 'cell-border stripe compact'
-  ) %>%
-    formatStyle(
-      columns = colnames(display_data),
-      backgroundColor = "white",
-      color = "black"
-    )
-  
-  # Apply specific styling based on mode
-  if (input$partyPrediction == "Battlefields") {
-    # For Battlefields, color the Marge column with the battlefield gradient
-    # and adjust text color to ensure readability
-    dt <- dt %>% formatStyle(
-      columns = "Marge",
-      backgroundColor = styleEqual(display_data$Marge, battlefield_colors),
-      color = styleEqual(display_data$Marge, text_colors)
-    )
-  } else {
-    # For other modes, color the party column
-    dt <- dt %>% formatStyle(
-      columns = "Parti en tête",
-      backgroundColor = styleEqual(
-        names(party_colors),
-        sapply(party_colors, function(color) {
-          paste0(color, "25")  # Add transparency to the color
-        })
+      rownames = FALSE,
+      class = 'cell-border stripe compact'
+    ) %>%
+      formatStyle(
+        columns = colnames(display_data),
+        backgroundColor = "white",
+        color = "black"
       )
-    )
-  }
-  
-  return(dt)
-})
+    
+    # Apply specific styling based on mode
+    if (input$partyPrediction == "Battlefields") {
+      # For Battlefields, color the Marge column with the battlefield gradient
+      # and adjust text color to ensure readability
+      dt <- dt %>% formatStyle(
+        columns = "Marge",
+        backgroundColor = styleEqual(display_data$Marge, battlefield_colors),
+        color = styleEqual(display_data$Marge, text_colors)
+      )
+    } else {
+      # For other modes, color the party column
+      dt <- dt %>% formatStyle(
+        columns = "Parti en tête",
+        backgroundColor = styleEqual(
+          names(party_colors),
+          sapply(party_colors, function(color) {
+            paste0(color, "25")  # Add transparency to the color
+          })
+        )
+      )
+    }
+    
+    return(dt)
+  })
   
   # Clear cache when major inputs change
   observeEvent(list(input$partyPrediction, rv$lang()), {

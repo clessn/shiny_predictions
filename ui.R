@@ -78,13 +78,23 @@ ui <- fluidPage(
         letter-spacing: -0.02em;
       }
       
-      .main-title {
-        font-size: 28px;
-        border-bottom: 2px solid #e6e6e6;
-        padding-bottom: 12px;
-        margin-bottom: 24px;
-        letter-spacing: -0.03em;
-      }
+    .main-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;  /* Space between title and icon */
+    margin: 0;
+  }
+  
+  .shrug-icon {
+    font-size: 1.2em;
+    white-space: nowrap;  /* Prevent line break in icon */
+  }
+  
+  /* Optional: If your title needs specific styling */
+  .main-title .shiny-html-output {
+    margin: 0;
+    display: inline-block;
+  }
       
       .section-header {
         font-size: 20px;
@@ -726,10 +736,11 @@ ui <- fluidPage(
       
       # Title
       div(class = "title-container",
-          h1(class = "main-title", 
-            htmlOutput("appTitle"), 
-            span(class = "shrug-icon", HTML("¯\\_(ツ)_/¯"))
-          )),
+          h1(class = "main-title",
+             htmlOutput("appTitle"),
+             span(class = "shrug-icon", HTML("¯\\_(ツ)_/¯"))
+          )
+      ),
       
       # Canada map at the top with container and section header
       div(class = "map-container",
