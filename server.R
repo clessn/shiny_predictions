@@ -1,4 +1,4 @@
-# server.R - Modified for Battlefields visualization
+# server.R - Modified for Battlefields visualization with geometry simplification
 library(shiny)
 library(DT)
 library(ggplot2)
@@ -80,17 +80,36 @@ server <- function(input, output, session) {
     return(df_ridings)
   })
   
+  # ADDED: Function to safely simplify geometries without topology errors
+  simplify_geometry <- function(g, tolerance = 0.01) {
+    tryCatch({
+      st_simplify(g, dTolerance = tolerance)
+    }, error = function(e) {
+      # If error, try with smaller tolerance
+      tryCatch({
+        st_simplify(g, dTolerance = tolerance/10)
+      }, error = function(e) {
+        # If still error, return original
+        g
+      })
+    })
+  }
+  
+  # ADDED: Cache for simplified geometries to avoid repeating the expensive operation
+  simplified_geom_cache <- reactiveVal(NULL)
+  
   # Create a more efficient reactive for filtered map data
   filtered_map_data <- reactive({
     # Get processed riding data
     df_ridings <- rv$processed_data()
     
-    # Ensure id_riding is a character string
-    map_data <- map_data # access from global environment
-    map_data$id_riding <- as.character(map_data$id_riding)
+    # Ensure we're using the map_data from global environment
+    # Explicitly get map_data from .GlobalEnv to avoid reactive context issues
+    map_data_filtered <- get("map_data", envir = .GlobalEnv)
+    map_data_filtered$id_riding <- as.character(map_data_filtered$id_riding)
     
     # Join with riding data to add party information
-    map_filtered <- map_data %>%
+    map_filtered <- map_data_filtered %>%
       left_join(df_ridings, by = c("id_riding" = "riding"))
     
     # Add alpha categories based on closeness
@@ -118,6 +137,57 @@ server <- function(input, output, session) {
         )
       )
     
+    # ADDED: Check if we already have simplified geometries in cache
+    if (is.null(simplified_geom_cache())) {
+      # Make a copy to avoid modifying original in-place
+      map_filtered_safe <- map_filtered
+      
+      # Safely get the geometries as a list first
+      geom_list <- st_geometry(map_filtered_safe)
+      # Apply simplification to each geometry individually
+      simplified_geoms <- lapply(geom_list, function(g) simplify_geometry(g, tolerance = 0.01))
+      
+      # Create a new geometry collection with the right CRS
+      map_filtered_safe$geometry <- st_sfc(simplified_geoms, crs = st_crs(map_filtered_safe))
+      
+      # Cache the simplified geometries for future use
+      simplified_geom_cache(map_filtered_safe)
+      
+      # Use the safely simplified data
+      map_filtered <- map_filtered_safe
+    } else {
+      # Get the cached geometries
+      cached_data <- simplified_geom_cache()
+      
+      # Keep only columns from the current data that should be updated
+      cols_to_keep <- setdiff(names(map_filtered), c("geometry"))
+      
+      # Make sure the cached geometries have the same length and order
+      if (nrow(map_filtered) == nrow(cached_data)) {
+        # Create a new sf object with current attributes but cached geometries
+        map_filtered <- map_filtered %>%
+          select(all_of(cols_to_keep)) %>%
+          st_set_geometry(st_geometry(cached_data))
+      } else {
+        # Fall back to simplifying the current data if cache mismatch
+        warning("Cache size mismatch, performing new simplification")
+        
+        # Safety copy
+        map_filtered_safe <- map_filtered
+        
+        # Simplify geometries safely
+        geom_list <- st_geometry(map_filtered_safe)
+        simplified_geoms <- lapply(geom_list, function(g) simplify_geometry(g, tolerance = 0.01))
+        map_filtered_safe$geometry <- st_sfc(simplified_geoms, crs = st_crs(map_filtered_safe))
+        
+        # Update cache
+        simplified_geom_cache(map_filtered_safe)
+        
+        # Use the newly simplified data
+        map_filtered <- map_filtered_safe
+      }
+    }
+    
     # Filter by party if selected
     if (input$partyPrediction == "All parties") {
       return(map_filtered)
@@ -144,8 +214,19 @@ server <- function(input, output, session) {
       return(city_data_cache[[cache_key]])
     }
     
+    # Get city mapping
+    city_map <- get("city_mapping", envir = .GlobalEnv)[[city_code]]
+    
     # Process the data for this city
-    city_data <- crop_map_for_app(filtered_data, city_code, city_mapping)
+    city_data <- tryCatch({
+      # Explicitly use the function from global environment
+      crop_map_fn <- get("crop_map_for_app", envir = .GlobalEnv)
+      crop_map_fn(filtered_data, city_code, get("city_mapping", envir = .GlobalEnv))
+    }, error = function(e) {
+      warning("Error processing city data: ", e$message)
+      # Return empty sf object with same structure
+      filtered_data[0,]
+    })
     
     # Store in cache
     city_data_cache[[cache_key]] <- city_data
@@ -234,7 +315,7 @@ server <- function(input, output, session) {
     ))
   }
   
-  # Render main map with hover functionality
+  # Render main map with ggiraph hover functionality (prioritizing ggiraph over plotly)
   output$mapPlot <- renderGirafe({
     # Get filtered data
     plot_data <- filtered_map_data()
@@ -249,11 +330,24 @@ server <- function(input, output, session) {
       return(girafe(ggobj = p))
     }
     
+    # Use the already simplified plot_data for the main map
+    # No need for additional simplification as we already did this in filtered_map_data()
+    main_map_data <- plot_data
+    
+    # Convert to WGS84 if not already done
+    if (st_crs(main_map_data)$input != "EPSG:4326") {
+      tryCatch({
+        main_map_data <- st_transform(main_map_data, 4326)
+      }, error = function(e) {
+        warning("Transform error: ", e$message)
+      })
+    }
+    
     # Create a different map based on whether we're in Battlefields mode
     if (input$partyPrediction == "Battlefields") {
       # Battlefield gradient map (black -> white -> yellow)
       p <- ggplot() +
-        geom_sf_interactive(data = plot_data, 
+        geom_sf_interactive(data = main_map_data, 
                 aes(fill = battlefield_intensity, tooltip = tooltip_text, data_id = id_riding),
                 color = "#555555", linewidth = 0.25) +
         scale_fill_gradientn(
@@ -266,7 +360,7 @@ server <- function(input, output, session) {
     } else {
       # Standard party colors map
       p <- ggplot() +
-        geom_sf_interactive(data = plot_data, 
+        geom_sf_interactive(data = main_map_data, 
                 aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
                 color = "#777777", linewidth = 0.25) +
         scale_fill_manual(
@@ -313,7 +407,7 @@ server <- function(input, output, session) {
     # Pas de légende
     p <- p
     
-    # Convertir en girafe pour l'interactivité
+    # ADDED: Configure girafe with optimal settings for performance
     girafe(ggobj = p, width_svg = 10, height_svg = 7, options = list(
       opts_tooltip(
         opacity = 0.9,
@@ -322,11 +416,15 @@ server <- function(input, output, session) {
       opts_hover(
         css = "stroke-width: 2; stroke: #000000;"
       ),
-      opts_sizing(rescale = TRUE)
+      opts_sizing(rescale = TRUE),
+      # ADDED: Improve render performance
+      opts_zoom(min = 0.7, max = 3),
+      opts_selection(type = "single"),
+      opts_toolbar(saveaspng = FALSE)
     ))
   })
   
-  # Improved city map rendering function with hover
+  # Improved city map rendering function with hover and better error handling
   renderCityMap <- function(city_code, city_name) {
     renderGirafe({
       # Create explicit dependency on these inputs
@@ -337,22 +435,31 @@ server <- function(input, output, session) {
         filtered_data <- filtered_map_data()
         
         # Check if city mapping exists
-        if (!is.null(city_mapping[[city_code]])) {
-          ridings <- city_mapping[[city_code]]$ridings
-          coords <- city_mapping[[city_code]]$coordinates
+        if (!is.null(get("city_mapping", envir = .GlobalEnv)[[city_code]])) {
+          # Get mapping from global environment
+          city_map <- get("city_mapping", envir = .GlobalEnv)[[city_code]]
+          ridings <- city_map$ridings
+          coords <- city_map$coordinates
           
-          # Filter and transform the data
-          city_data <- filtered_data %>%
-            filter(id_riding %in% ridings)
+          # Filter and transform the data safely
+          city_data <- tryCatch({
+            filtered_data %>%
+              filter(id_riding %in% ridings)
+          }, error = function(e) {
+            warning("Error filtering city data: ", e$message)
+            return(filtered_data[0,])
+          })
           
           # Only continue if we have data
           if (nrow(city_data) > 0) {
             # Convert to WGS84 projection safely
             tryCatch({
-              city_data <- st_transform(city_data, 4326)
+              if (st_crs(city_data)$input != "EPSG:4326") {
+                city_data <- st_transform(city_data, 4326)
+              }
             }, error = function(e) {
               # If transformation fails, just use as-is
-              message("Transform error for ", city_name, ": ", e$message)
+              warning("Transform error for ", city_name, ": ", e$message)
             })
             
             # Create city map with different styling based on mode
@@ -399,7 +506,7 @@ server <- function(input, output, session) {
                 plot.margin = margin(0, 0, 0, 0)
               )
             
-            # Convertir en girafe pour l'interactivité
+            # Convertir en girafe pour l'interactivité avec options optimisées
             return(girafe(ggobj = p, width_svg = 5, height_svg = 4, options = list(
               opts_tooltip(
                 opacity = 0.9,
@@ -408,7 +515,11 @@ server <- function(input, output, session) {
               opts_hover(
                 css = "stroke-width: 2; stroke: #000000;"
               ),
-              opts_sizing(rescale = TRUE)
+              opts_sizing(rescale = TRUE),
+              # ADDED: Limit functionality to improve performance
+              opts_zoom(min = 0.9, max = 2),
+              opts_selection(type = "single"),
+              opts_toolbar(saveaspng = FALSE)
             )))
           }
         }
@@ -455,8 +566,8 @@ server <- function(input, output, session) {
     # Format data for display
     df_ridings %>% 
       mutate(
-        # Joindre avec map_data pour obtenir name_riding_fr
-        riding_name = map_data$name_riding_fr[match(riding, map_data$id_riding)],
+        # Joindre avec map_data pour obtenir name_riding_fr (from global environment)
+        riding_name = get("map_data", envir = .GlobalEnv)$name_riding_fr[match(riding, get("map_data", envir = .GlobalEnv)$id_riding)],
         # Utiliser l'ID si nom non trouvé
         riding_name = ifelse(is.na(riding_name), as.character(riding), riding_name),
         # Format percentages with % symbol
@@ -473,113 +584,124 @@ server <- function(input, output, session) {
         "Second parti" = second_party,
         "Pourcentage (2e)" = second_party_pct,
         "Marge" = margin
-      )
+      ) %>%
+      # Ensure we have data by filtering out NA parties
+      filter(!is.na(`Parti en tête`))
   })
   
   # Render data table
- # Render data table
- output$dataTable <- renderDataTable({
-  # Use the reactive table data
-  display_data <- table_data()
-  
-  # Only create the datatable when we have data
-  req(nrow(display_data) > 0)
-  
-  # Special color styling for Battlefields mode
-  if (input$partyPrediction == "Battlefields") {
-    # Get margins as numeric for battlefields coloring
-    numeric_margins <- as.numeric(gsub("%", "", display_data$Marge))
+  output$dataTable <- renderDataTable({
+    # Use the reactive table data
+    display_data <- table_data()
     
-    # Calculate color intensity for each row
-    battlefield_colors <- sapply(numeric_margins, function(margin) {
-      # Create gradient: yellow (100) -> white (50) -> black (0)
-      intensity <- pmin(100, pmax(0, 100 - (margin * 4)))
-      
-      if (intensity <= 50) {
-        # Black to White gradient
-        val <- (intensity / 50) * 255
-        r <- val
-        g <- val
-        b <- val
-      } else {
-        # White to Yellow (#FFCC00) gradient
-        r <- 255
-        g <- 255 - ((intensity - 50) / 50) * (255 - 204)
-        b <- 255 - ((intensity - 50) / 50) * 255
-      }
-      
-      return(rgb(r, g, b, maxColorValue = 255))
-    })
+    # Only create the datatable when we have data
+    req(nrow(display_data) > 0)
     
-    # Create text colors array (white for dark backgrounds, black for light backgrounds)
-    text_colors <- sapply(numeric_margins, function(margin) {
-      intensity <- pmin(100, pmax(0, 100 - (margin * 4)))
-      # Use white text if background is dark (intensity > 65)
-      if (intensity > 65) {
-        return("#000000") # White text
-      } else {
-        return("#FFFFFF") # Black text
-      }
-    })
-  }
-  
-  # Return the data with improved formatting
-  dt <- datatable(
-    display_data,
-    options = list(
-      pageLength = 10,
-      autoWidth = FALSE,
-      searchHighlight = TRUE,
-      dom = '<"top"f>rt<"bottom"ip>',
-      language = list(
-        search = "Rechercher:",
-        paginate = list(previous = "Précédent", `next` = "Suivant")
+    # Special color styling for Battlefields mode
+    if (input$partyPrediction == "Battlefields") {
+      # Get margins as numeric for battlefields coloring
+      numeric_margins <- as.numeric(gsub("%", "", display_data$Marge))
+      
+      # Calculate color intensity for each row
+      battlefield_colors <- sapply(numeric_margins, function(margin) {
+        # Create gradient: yellow (100) -> white (50) -> black (0)
+        intensity <- pmin(100, pmax(0, 100 - (margin * 4)))
+        
+        if (intensity <= 50) {
+          # Black to White gradient
+          val <- (intensity / 50) * 255
+          r <- val
+          g <- val
+          b <- val
+        } else {
+          # White to Yellow (#FFCC00) gradient
+          r <- 255
+          g <- 255 - ((intensity - 50) / 50) * (255 - 204)
+          b <- 255 - ((intensity - 50) / 50) * 255
+        }
+        
+        return(rgb(r, g, b, maxColorValue = 255))
+      })
+      
+      # Create text colors array (white for dark backgrounds, black for light backgrounds)
+      text_colors <- sapply(numeric_margins, function(margin) {
+        intensity <- pmin(100, pmax(0, 100 - (margin * 4)))
+        # Use white text if background is dark (intensity > 65)
+        if (intensity > 65) {
+          return("#000000") # White text
+        } else {
+          return("#FFFFFF") # Black text
+        }
+      })
+    }
+    
+    # ADDED: DT performance optimizations
+    dt <- datatable(
+      display_data,
+      options = list(
+        pageLength = 10,
+        autoWidth = FALSE,
+        searchHighlight = TRUE,
+        dom = '<"top"f>rt<"bottom"ip>',
+        language = list(
+          search = "Rechercher:",
+          paginate = list(previous = "Précédent", `next` = "Suivant")
+        ),
+        scrollX = TRUE,
+        # Only define essential column defs
+        columnDefs = list(
+          list(className = 'dt-center', targets = "_all"),
+          # Ajouter un columnDef pour traiter la colonne Marge numériquement
+          list(
+            targets = 5,  # Index de la colonne "Marge" (en supposant qu'elle est à l'index 5)
+            type = 'num'  # Définir le type comme numérique
+          )
+        ),
+        order = if(input$partyPrediction == "Battlefields") list(list(5, 'asc')) else NULL,
+        # ADDED: Performance optimizations
+        deferRender = TRUE,
+        scroller = TRUE,
+        stateSave = FALSE,
+        processing = FALSE
       ),
-      scrollX = TRUE,
-      # Only define essential column defs
-      columnDefs = list(
-        list(className = 'dt-center', targets = "_all"),
-        # Ajouter un columnDef pour traiter la colonne Marge numériquement
-        list(
-          targets = 5,  # Index de la colonne "Marge" (en supposant qu'elle est à l'index 5)
-          type = 'num'  # Définir le type comme numérique
-        )
-      ),
-      order = if(input$partyPrediction == "Battlefields") list(list(5, 'asc')) else NULL
-    ),
-    rownames = FALSE,
-    class = 'cell-border stripe compact'
-  ) %>%
-    formatStyle(
-      columns = colnames(display_data),
-      backgroundColor = "white",
-      color = "black"
-    )
-  
-  # Apply specific styling based on mode
-  if (input$partyPrediction == "Battlefields") {
-    # For Battlefields, color the Marge column with the battlefield gradient
-    # and adjust text color to ensure readability
-    dt <- dt %>% formatStyle(
-      columns = "Marge",
-      backgroundColor = styleEqual(display_data$Marge, battlefield_colors),
-      color = styleEqual(display_data$Marge, text_colors)
-    )
-  } else {
-    # For other modes, color the party column
-    dt <- dt %>% formatStyle(
-      columns = "Parti en tête",
-      backgroundColor = styleEqual(
-        names(party_colors),
-        sapply(party_colors, function(color) {
-          paste0(color, "25")  # Add transparency to the color
-        })
+      rownames = FALSE,
+      class = 'cell-border stripe compact'
+    ) %>%
+      formatStyle(
+        columns = colnames(display_data),
+        backgroundColor = "white",
+        color = "black"
       )
-    )
-  }
+    
+    # Apply specific styling based on mode
+    if (input$partyPrediction == "Battlefields") {
+      # For Battlefields, color the Marge column with the battlefield gradient
+      # and adjust text color to ensure readability
+      dt <- dt %>% formatStyle(
+        columns = "Marge",
+        backgroundColor = styleEqual(display_data$Marge, battlefield_colors),
+        color = styleEqual(display_data$Marge, text_colors)
+      )
+    } else {
+      # For other modes, color the party column
+      dt <- dt %>% formatStyle(
+        columns = "Parti en tête",
+        backgroundColor = styleEqual(
+          names(party_colors),
+          sapply(party_colors, function(color) {
+            paste0(color, "25")  # Add transparency to the color
+          })
+        )
+      )
+    }
+    
+    return(dt)
+  })
   
-  return(dt)
-})
+  # ADDED: Reset geometry cache when major parameters change
+  observeEvent(list(input$reset), {
+    simplified_geom_cache(NULL)
+  })
   
   # Clear cache when major inputs change
   observeEvent(list(input$partyPrediction), {
