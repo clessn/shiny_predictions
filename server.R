@@ -289,12 +289,22 @@ server <- function(input, output, session) {
         )
     } else {
       # Calculate party seats - save to a reactive value so it can be accessed in sidebar
-      party_seats <- table(plot_data$party)
+      # Use unique riding ids to ensure each riding is counted only once
+      # This solves the issue where some ridings appear in multiple shape files
+      unique_ridings <- plot_data %>%
+        select(id_riding, party) %>%
+        distinct(id_riding, .keep_all = TRUE)
+      
+      # Now count seats by party from the unique ridings
+      party_seats <- table(unique_ridings$party)
       party_seats <- party_seats[partis_politiques]
       party_seats[is.na(party_seats)] <- 0
       
       # Save party seats to reactive values for use in sidebar
       rv$party_seats <- party_seats
+      
+      # Add total seat count to verify we have the correct number (343)
+      rv$total_seats <- sum(party_seats)
       
       # Check if it's a party-specific view
       if (input$partyPrediction %in% partis_politiques) {
@@ -780,8 +790,17 @@ server <- function(input, output, session) {
       ))
     })
     
-    # Join all HTML pieces together
-    do.call(tagList, seat_html)
+    # Add a total row
+    total_label <- ifelse(rv$lang() == "fr", "sièges au total", "total seats")
+    total_html <- HTML(paste0(
+      "<div style='display: flex; justify-content: space-between; margin: 10px 0; border-top: 1px solid #eee; padding-top: 5px;'>",
+      "<span style='font-weight: bold;'>", ifelse(rv$lang() == "fr", "Total", "Total"), "</span>",
+      "<span>", rv$total_seats, " ", total_label, "</span>",
+      "</div>"
+    ))
+    
+    # Join all HTML pieces together including the total
+    do.call(tagList, c(seat_html, list(total_html)))
   })
   
   # City names based on current language
