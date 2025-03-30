@@ -289,7 +289,7 @@ server <- function(input, output, session) {
         )
     } else {
       # Calculate party seats - save to a reactive value so it can be accessed in sidebar
-      party_seats <- table(map_filtered$party)
+      party_seats <- table(plot_data$party)
       party_seats <- party_seats[partis_politiques]
       party_seats[is.na(party_seats)] <- 0
       
