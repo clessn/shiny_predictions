@@ -102,7 +102,7 @@ party_colors <- c(
   "CPC" = "#0E4C92",  # Conservative - Blue
   "NDP" = "#FF8000",  # NDP - Orange
   "BQ" = "#00B2FF",   # Bloc Québécois - Light blue
-  "GP" = "#39D353"   # Green Party - Green
+  "GPC" = "#39D353"   # Green Party - Green
 )
 
 # Define party names for labels (English and French versions)
@@ -112,19 +112,19 @@ party_names <- list(
     "CPC" = "Conservative", 
     "NDP" = "New Democratic",
     "BQ" = "Bloc Québécois",
-    "GP" = "Green"
+    "GPC" = "Green"
   ),
   "fr" = c(
     "LPC" = "Libéral", 
     "CPC" = "Conservateur", 
     "NDP" = "Nouveau Démocratique",
     "BQ" = "Bloc Québécois",
-    "GP" = "Vert"
+    "GPC" = "Parti Vert"
   )
 )
 
 # Define Canadian political parties
-partis_politiques <- c("LPC", "CPC", "BQ", "NDP", "GP")
+partis_politiques <- c("LPC", "CPC", "BQ", "NDP", "GPC")
 
 # Dictionary for translations
 translations <- list(

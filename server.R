@@ -45,7 +45,7 @@ server <- function(input, output, session) {
   observe({
     updateSelectInput(session, "partyPrediction", 
                       label = t("party_prediction"),
-                      choices = c(t("all_parties"), "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
+                      choices = c(t("all_parties"), "LPC", "CPC", "BQ", "NDP", "GPC", "Battlefields"),
                       selected = input$partyPrediction)
   })
   
