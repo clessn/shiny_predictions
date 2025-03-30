@@ -215,3 +215,6 @@ my_theme <- bs_theme(
   font_scale = 1,
   spacer = "1rem"
 )
+
+# Custom font for the app - define here so it's accessible globally
+font_file <- "www/PixelOperatorSC.ttf"

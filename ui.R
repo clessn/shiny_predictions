@@ -7,13 +7,13 @@ library(bslib)
 library(fontawesome)
 library(ggiraph) # Ajouté pour les fonctionnalités hover
 
-# Create a refined loading screen
+# Create a refined loading screen with PixelOperator font
 loading_screen <- tagList(
   div(
     style = "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: #f9f9f9; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column;",
     div(class = "text-center",
-        tags$div(style = "color: #222222; font-size: 28px; margin-bottom: 20px; font-family: 'Libre Baskerville', Georgia, serif;"),
-        tags$p(style = "color: #555555; font-size: 16px; font-family: 'Times New Roman', Times, serif;", "Chargement des données..."),
+        tags$div(style = "color: #222222; font-size: 28px; margin-bottom: 20px; font-family: 'PixelOperator', monospace;"),
+        tags$p(style = "color: #555555; font-size: 16px; font-family: 'PixelOperator', monospace;", "Chargement des données..."),
         tags$div(style = "width: 120px; height: 2px; background-color: #f0f0f0; border-radius: 0; margin-top: 20px; position: relative; overflow: hidden;",
                  tags$div(class = "loading-bar", style = "position: absolute; top: 0; left: 0; height: 100%; width: 30%; background-color: #444444; border-radius: 0; animation: loading 1.5s infinite;"))
     )
@@ -21,21 +21,32 @@ loading_screen <- tagList(
 )
 
 ui <- fluidPage(
+  theme = my_theme,
   # Use optimized loading screen
   useWaiter(loading_screen),
   useShinyjs(),
   tags$head(
     # Load CSS via CDN for better performance
     tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"),
-    # Import Google Fonts with lazy loading
-    tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap", 
-              media = "print", onload = "this.media='all'"),
+    
+    # Directly embed font-face for pixel font
+    tags$style(HTML("
+      @font-face {
+        font-family: 'PixelOperator';
+        src: url('PixelOperatorSC.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+      }
+    ")),
+    
+    # Load SCSS styles directly
+    includeCSS("www/custom.scss"),
     
     # Directly embed CSS in the UI instead of linking to external file
     tags$style(HTML("
       /* Base styles */
       body {
-        font-family: 'Times New Roman', Times, serif;
+        font-family: 'PixelOperator', monospace;
         background-color: #f6f7f9;
         color: #333333;
         margin: 0;
@@ -60,7 +71,7 @@ ui <- fluidPage(
       
       /* Headings */
       h1, h2, h3, h4, h5, h6 {
-        font-family: 'Libre Baskerville', Georgia, serif;
+        font-family: 'PixelOperator', monospace;
         font-weight: 700;
         margin-top: 0;
         color: #222222;
@@ -98,7 +109,7 @@ ui <- fluidPage(
         color: #333333;
         background-color: #ffffff;
         transition: border-color 0.2s ease;
-        font-family: 'Times New Roman', Times, serif;
+        font-family: 'PixelOperator', monospace;
       }
       
       .form-control:focus {
@@ -112,7 +123,7 @@ ui <- fluidPage(
         box-shadow: none !important;
         border-radius: 2px !important;
         padding: 10px 12px !important;
-        font-family: 'Times New Roman', Times, serif !important;
+        font-family: 'PixelOperator', monospace !important;
       }
       
       .selectize-input.focus {
@@ -124,7 +135,7 @@ ui <- fluidPage(
         border: 1px solid #d9d9d9 !important;
         border-radius: 0 0 2px 2px !important;
         box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1) !important;
-        font-family: 'Times New Roman', Times, serif !important;
+        font-family: 'PixelOperator', monospace !important;
       }
       
       .selectize-dropdown-content .option {
@@ -142,7 +153,7 @@ ui <- fluidPage(
         cursor: pointer;
         font-weight: normal;
         margin-bottom: 0;
-        font-family: 'Times New Roman', Times, serif;
+        font-family: 'PixelOperator', monospace;
       }
       
       .checkbox input[type='checkbox'] {
@@ -170,7 +181,7 @@ ui <- fluidPage(
         padding: 10px;
         border-radius: 5px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        font-family: 'Times New Roman', Times, serif;
+        font-family: 'PixelOperator', monospace;
         font-size: 14px;
       }
       
@@ -206,7 +217,7 @@ ui <- fluidPage(
         background-color: rgba(255, 255, 255, 0.9);
         color: #222222;
         padding: 8px;
-        font-family: 'Libre Baskerville', Georgia, serif;
+        font-family: 'PixelOperator', monospace;
         font-size: 14px;
         text-align: center;
         border-top: 1px solid #f0f0f0;
@@ -224,7 +235,7 @@ ui <- fluidPage(
       /* DataTable styling */
       .dataTables_wrapper {
         font-size: 14px;
-        font-family: 'Times New Roman', Times, serif;
+        font-family: 'PixelOperator', monospace;
       }
       
       .dataTable {
@@ -240,7 +251,7 @@ ui <- fluidPage(
         font-weight: 600 !important;
         padding: 12px 10px !important;
         text-align: left;
-        font-family: 'Libre Baskerville', Georgia, serif;
+        font-family: 'PixelOperator', monospace;
         font-size: 14px;
       }
       
@@ -264,7 +275,7 @@ ui <- fluidPage(
         border: 1px solid #d9d9d9 !important;
         border-radius: 2px !important;
         margin-left: 8px !important;
-        font-family: 'Times New Roman', Times, serif !important;
+        font-family: 'PixelOperator', monospace !important;
       }
       
       .dataTables_length select {
@@ -272,7 +283,7 @@ ui <- fluidPage(
         border: 1px solid #d9d9d9 !important;
         border-radius: 2px !important;
         margin: 0 6px !important;
-        font-family: 'Times New Roman', Times, serif !important;
+        font-family: 'PixelOperator', monospace !important;
       }
       
       .dataTables_paginate .paginate_button {
@@ -282,7 +293,7 @@ ui <- fluidPage(
         margin: 0 2px !important;
         background-color: #ffffff !important;
         color: #333333 !important;
-        font-family: 'Times New Roman', Times, serif !important;
+        font-family: 'PixelOperator', monospace !important;
       }
       
       .dataTables_paginate .paginate_button:hover {
@@ -322,7 +333,7 @@ ui <- fluidPage(
         font-size: 12px;
         color: #777777;
         text-align: center;
-        font-family: 'Times New Roman', Times, serif;
+        font-family: 'PixelOperator', monospace;
         font-weight: 300;
       }
       
@@ -379,7 +390,7 @@ ui <- fluidPage(
       .party-legend-title {
       font-size: 15px;
       margin-bottom: 15px;
-      font-family: 'Libre Baskerville', Georgia, serif;
+      font-family: 'PixelOperator', monospace;
       text-align: center;
       color: #333;
       }
@@ -457,7 +468,7 @@ ui <- fluidPage(
       .bf-legend-title {
       font-size: 15px;
       margin-bottom: 15px;
-      font-family: 'Libre Baskerville', Georgia, serif;
+      font-family: 'PixelOperator', monospace;
       text-align: center;
       color: #333;
       }
@@ -515,7 +526,7 @@ ui <- fluidPage(
       .sources-title {
         font-size: 15px;
         margin-bottom: 15px;
-        font-family: 'Libre Baskerville', Georgia, serif;
+        font-family: 'PixelOperator', monospace;
         text-align: center;
         color: #333;
       }
@@ -553,7 +564,7 @@ ui <- fluidPage(
       }
       
       .main-title {
-        font-family: 'Libre Baskerville', Georgia, serif;
+        font-family: 'PixelOperator', monospace;
         font-size: 32px;
         font-weight: 700;
         color: #222222;
@@ -571,7 +582,7 @@ ui <- fluidPage(
       }
       
       .subtitle {
-        font-family: 'Libre Baskerville', Georgia, serif;
+        font-family: 'PixelOperator', monospace;
         font-size: 22px;
         font-weight: 400;
         color: #444444;
@@ -596,12 +607,12 @@ ui <- fluidPage(
     # Sidebar with controls
     sidebarPanel(
       width = 3,
-      h3(HTML(""), 
+      h3(HTML("Options"), 
          class = "sidebar-title"),
       
       # Model type dropdown
       h4("Type de modèle:", class = "input-title"),
-      div(style = "margin-bottom: 15px; font-family: 'Times New Roman', Times, serif;",
+      div(style = "margin-bottom: 15px;",
           tags$span("Agrégateur d'agrégateurs", 
                     style = paste0(
                       "display: block;",
@@ -609,7 +620,8 @@ ui <- fluidPage(
                       "background-color: #ffffff;",
                       "border: 1px solid #d9d9d9;",
                       "border-radius: 2px;",
-                      "color: #333333;"
+                      "color: #333333;",
+                      "font-family: 'PixelOperator', monospace;"
                     )
           )
       ),

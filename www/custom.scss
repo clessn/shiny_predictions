@@ -1,326 +1,76 @@
-/* custom.scss - Sophisticated styling for Electoral Map app */
-
-/* Font definitions */
-@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap');
-
-/* Base styles */
-body {
-  font-family: 'Times New Roman', Times, serif;
-  background-color: #f6f7f9;
-  color: #333333;
-  margin: 0;
-  padding: 0;
-  line-height: 1.6;
-  font-weight: 400;
+/* Define the PixelOperator font face */
+@font-face {
+  font-family: 'PixelOperator';
+  src: url('PixelOperatorSC.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
 }
 
-/* Standard sidebar panel styling */
-.well {
-  background-color: #ffffff;
-  border: 1px solid #e6e6e6;
-  border-radius: 2px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  padding: 20px;
+/* Apply pixel font to all elements */
+body, h1, h2, h3, h4, h5, h6, p, span, a, div, button, input, select, textarea, label,
+.form-control, .selectize-input, .dataTables_wrapper, .party-name, .shiny-plot-output, .tooltip-riding {
+  font-family: 'PixelOperator', monospace !important;
 }
 
-/* Standard container styling */
-.container-fluid {
-  padding: 20px;
+/* Override specific elements that might inherit from other classes */
+.main-title, .sidebar-title, .section-header, .party-legend-title, .bf-legend-title, .sources-title {
+  font-family: 'PixelOperator', monospace !important;
+  letter-spacing: 0.02em !important;
 }
 
-/* Headings */
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-weight: 700;
-  margin-top: 0;
-  color: #222222;
-  letter-spacing: -0.02em;
-}
-
+/* Adjust spacing for this specific font */
 .main-title {
-  font-size: 28px;
-  border-bottom: 2px solid #e6e6e6;
-  padding-bottom: 12px;
-  margin-bottom: 24px;
-  letter-spacing: -0.03em;
+  font-size: 36px !important;
 }
 
-.section-header {
-  font-size: 20px;
-  margin-bottom: 15px;
-  border-bottom: none;
-  padding-bottom: 0;
-  color: #222222;
+.subtitle {
+  font-size: 24px !important;
+  font-family: 'PixelOperator', monospace !important;
 }
 
 .sidebar-title {
-  font-size: 22px;
-  color: #222222;
-  margin-bottom: 25px;
+  font-size: 24px !important;
 }
 
-/* Form control styling */
-.form-control {
-  border: 1px solid #d9d9d9;
-  border-radius: 2px;
-  box-shadow: none;
-  padding: 10px 12px;
-  color: #333333;
-  background-color: #ffffff;
-  transition: border-color 0.2s ease;
-  font-family: 'Times New Roman', Times, serif;
-}
-
-.form-control:focus {
-  border-color: #18BC9C;
-  box-shadow: 0 0 0 3px rgba(24, 188, 156, 0.15);
-  outline: none;
-}
-
-/* Select input styling */
-.selectize-input {
-  border: 1px solid #d9d9d9 !important;
-  box-shadow: none !important;
-  border-radius: 2px !important;
-  padding: 10px 12px !important;
-  font-family: 'Times New Roman', Times, serif !important;
-}
-
-.selectize-input.focus {
-  border-color: #18BC9C !important;
-  box-shadow: 0 0 0 3px rgba(24, 188, 156, 0.15) !important;
-}
-
-.selectize-dropdown {
-  border: 1px solid #d9d9d9 !important;
-  border-radius: 0 0 2px 2px !important;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1) !important;
-  font-family: 'Times New Roman', Times, serif !important;
-}
-
-.selectize-dropdown-content .option {
-  padding: 10px 12px !important;
-}
-
-.selectize-dropdown-content .option.active {
-  background-color: #18BC9C !important;
-  color: #ffffff !important;
-}
-
-/* Checkbox styling */
-.checkbox label {
-  display: inline-block;
-  cursor: pointer;
-  font-weight: normal;
-  margin-bottom: 0;
-  font-family: 'Times New Roman', Times, serif;
-}
-
-.checkbox input[type="checkbox"] {
-  margin-right: 8px;
-  vertical-align: middle;
-}
-
-/* Map container styling */
-.map-container {
-  background-color: #ffffff;
-  border-radius: 2px;
-  border: 1px solid #e6e6e6;
-  overflow: hidden;
-  margin-bottom: 24px;
-  padding: 0;
-}
-
-.map-container .shiny-plot-output {
-  min-height: 500px;
-}
-
-/* City maps container */
-.city-maps-container {
-  background-color: #ffffff;
-  border-radius: 2px;
-  border: 1px solid #e6e6e6;
-  padding: 20px;
-  margin-bottom: 24px;
-}
-
-/* City map boxes */
-.city-map-box {
-  background-color: #ffffff;
-  border: 1px solid #e9e9e9;
-  border-radius: 2px;
-  overflow: hidden;
-  position: relative;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.city-map-box:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.map-title-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: rgba(255, 255, 255, 0.9);
-  color: #222222;
-  padding: 8px;
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: 14px;
-  text-align: center;
-  border-top: 1px solid #f0f0f0;
-}
-
-/* Table container styling */
-.table-container {
-  background-color: #ffffff;
-  border-radius: 2px;
-  border: 1px solid #e6e6e6;
-  padding: 20px;
-  margin-bottom: 24px;
-}
-
-/* DataTable styling */
-.dataTables_wrapper {
-  font-size: 14px;
-  font-family: 'Times New Roman', Times, serif;
-}
-
-.dataTable {
-  width: 100% !important;
-  border-collapse: collapse;
-  margin-bottom: 0;
-}
-
-.dataTable thead th {
-  background-color: #f4f4f4 !important;
-  color: #222222 !important;
-  border-bottom: 2px solid #e6e6e6 !important;
-  font-weight: 600 !important;
-  padding: 12px 10px !important;
-  text-align: left;
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: 14px;
-}
-
-.dataTable tbody td {
-  padding: 10px !important;
-  border-top: 1px solid #f0f0f0 !important;
-  vertical-align: middle !important;
-}
-
-.dataTable tbody tr:nth-child(even) {
-  background-color: #f9f9f9 !important;
-}
-
-.dataTable tbody tr:hover {
-  background-color: #f0f0f0 !important;
-}
-
-/* DataTable controls */
-.dataTables_filter input {
-  padding: 8px 12px !important;
-  border: 1px solid #d9d9d9 !important;
-  border-radius: 2px !important;
-  margin-left: 8px !important;
-  font-family: 'Times New Roman', Times, serif !important;
-}
-
-.dataTables_length select {
-  padding: 8px 30px 8px 12px !important;
-  border: 1px solid #d9d9d9 !important;
-  border-radius: 2px !important;
-  margin: 0 6px !important;
-  font-family: 'Times New Roman', Times, serif !important;
-}
-
+/* Make sure DataTable elements also use the pixel font */
+.dataTable thead th, 
+.dataTable tbody td, 
+.dataTables_filter input, 
+.dataTables_length select,
 .dataTables_paginate .paginate_button {
-  padding: 0.5em 1em !important;
-  border: 1px solid #d9d9d9 !important;
-  border-radius: 2px !important;
-  margin: 0 2px !important;
-  background-color: #ffffff !important;
-  color: #333333 !important;
-  font-family: 'Times New Roman', Times, serif !important;
+  font-family: 'PixelOperator', monospace !important;
 }
 
-.dataTables_paginate .paginate_button:hover {
-  background-color: #f0f0f0 !important;
-  color: #333333 !important;
-  border-color: #d9d9d9 !important;
+/* Adjust font size for readability */
+body {
+  font-size: 16px !important;
 }
 
-.dataTables_paginate .paginate_button.current,
-.dataTables_paginate .paginate_button.current:hover {
-  background-color: #18BC9C !important;
-  color: #ffffff !important;
-  border-color: #18BC9C !important;
+/* Special adjustment for dialog boxes and tooltips */
+.tooltip-riding {
+  font-family: 'PixelOperator', monospace !important;
+  font-size: 14px !important;
 }
 
-/* Spinner styling */
-.shiny-spinner-output-container .load-container {
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 2px;
+/* Ensure map overlays use the pixel font */
+.map-title-overlay {
+  font-family: 'PixelOperator', monospace !important;
+  font-size: 16px !important;
 }
 
-.shiny-spinner-output-container .loader {
-  color: #18BC9C !important;
+/* Adjust input elements */
+.form-control, .selectize-input, .selectize-dropdown-content .option {
+  font-family: 'PixelOperator', monospace !important;
 }
 
-/* Loading screen animation */
-@keyframes loading {
-  0% { left: -30%; }
-  100% { left: 100%; }
+/* Party labels */
+.party-label, .bf-label {
+  font-family: 'PixelOperator', monospace !important;
+  font-size: 12px !important;
 }
 
 /* Sidebar footer */
 .sidebar-footer {
-  margin-top: 40px;
-  border-top: 1px solid #eeeeee;
-  padding-top: 20px;
-  font-size: 12px;
-  color: #777777;
-  text-align: center;
-  font-family: 'Times New Roman', Times, serif;
-  font-weight: 300;
-}
-
-/* Font Awesome icons */
-.fa, .fas, .far, .fab {
-  font-family: "Font Awesome 5 Free", "Font Awesome 5 Brands" !important;
-  font-weight: 900; /* Ensure correct weight for icons */
-}
-
-/* Label styling */
-label {
-  font-weight: 500;
-  font-size: 15px;
-  margin-bottom: 8px;
-  display: block;
-  color: #444444;
-}
-
-/* Animation for fade in */
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Responsive layout adjustments */
-@media (max-width: 991px) {
-  .city-maps-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-}
-
-@media (max-width: 767px) {
-  .city-maps-grid {
-    grid-template-columns: 1fr !important;
-  }
+  font-family: 'PixelOperator', monospace !important;
+  font-size: 14px !important;
 }
