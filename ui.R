@@ -102,9 +102,8 @@ ui <- fluidPage(
       }
       
       .form-control:focus {
-        border-color: #18BC9C;
-        box-shadow: 0 0 0 3px rgba(24, 188, 156, 0.15);
-        outline: none;
+        border-color: #d9d9d9;
+        box-shadow: 0 0 0 3px rgba(217, 217, 217, 0.5);
       }
       
       /* Select input styling */
@@ -117,8 +116,8 @@ ui <- fluidPage(
       }
       
       .selectize-input.focus {
-        border-color: #18BC9C !important;
-        box-shadow: 0 0 0 3px rgba(24, 188, 156, 0.15) !important;
+        border-color: #d9d9d9 !important;
+        box-shadow: 0 0 0 3px rgba(217, 217, 217, 0.5) !important;
       }
       
       .selectize-dropdown {
@@ -133,7 +132,7 @@ ui <- fluidPage(
       }
       
       .selectize-dropdown-content .option.active {
-        background-color: #18BC9C !important;
+        background-color: #d9d9d9!important;
         color: #ffffff !important;
       }
       
@@ -382,18 +381,25 @@ ui <- fluidPage(
       
       # Model type dropdown
       h4("Type de modèle:", class = "input-title"),
-      selectInput("modelType", NULL,
-                  choices = c("People predict", "Agrégateur d'agrégateurs", "Combiné"),
-                  selected = "People predict"),
+      div(style = "margin-bottom: 15px; font-family: 'Times New Roman', Times, serif;",
+          tags$span("Agrégateur d'agrégateurs", 
+                    style = paste0(
+                      "display: block;",
+                      "padding: 10px 12px;",
+                      "background-color: #ffffff;",
+                      "border: 1px solid #d9d9d9;",
+                      "border-radius: 2px;",
+                      "color: #333333;"
+                    )
+          )
+      ),
       
       # Party prediction dropdown
       h4("Prédiction par parti:", class = "input-title"),
       selectInput("partyPrediction", NULL,
-                  choices = c("All parties", "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
-                  selected = "All parties"),
+                  choices = c("Tous les partis", "LPC", "CPC", "BQ", "NDP", "GP", "Battlefields"),
+                  selected = "Tous les partis"),
       
-                  # Modification de la légende - Partie de ui.R
-# Cette partie remplace le code de la légende des partis
 
 conditionalPanel(
   condition = "input.partyPrediction != 'Battlefields'",
@@ -453,7 +459,7 @@ conditionalPanel(
   )
 ),
 
-# Style CSS amélioré pour les légendes
+# Style CSS pour les légendes
 tags$style(HTML("
 /* Styles pour la légende des partis - Version améliorée */
 .party-legend-container {
@@ -493,7 +499,7 @@ text-align: left;
 text-align: right;
 }
 
-/* Styles améliorés pour les gradients des partis */
+/* Styles pour les gradients des partis */
 .party-gradients-container {
 margin-top: 15px;
 }
@@ -501,7 +507,7 @@ margin-top: 15px;
 .party-gradient-row {
 display: flex;
 align-items: center;
-margin-bottom: 8px; /* Réduit l'espacement entre les gradients */
+margin-bottom: 8px; 
 }
 
 .party-name {
@@ -679,7 +685,7 @@ text-align: right;
       
 # Section "Source de données"
 div(class = "data-sources-container",
-    h4("Source de données", class = "sources-title"),
+    h4("Lien vers les données", class = "sources-title"),
     div(class = "sources-list",
         div(class = "source-item",
             a(href = "https://www.voxpoplabs.com/thesignal", target = "_blank", "The Signal")
@@ -689,9 +695,6 @@ div(class = "data-sources-container",
         ),
         div(class = "source-item",
             a(href = "https://www.poliwave.com", target = "_blank", "Poliwave")
-        ),
-        div(class = "source-item",
-            a(href = "https://canada.datagotchi.com", target = "_blank", "Léger-Datagotchi")
         )
     )
 ),
@@ -711,8 +714,6 @@ div(class = "data-sources-container",
       HTML('
 <div class="title-container">
   <h1 class="main-title">Agrégateur d\'agrégateurs <span class="shrug-icon">¯\\_(ツ)_/¯</span></h1>
-  <h2 class="subtitle">+ Prédiction citoyenne Léger-Datagotchi</h2>
-</div>
 '),
       
       # Canada map at the top with container and section header
