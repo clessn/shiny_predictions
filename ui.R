@@ -617,11 +617,22 @@ ui <- fluidPage(
     # Sidebar with controls
     sidebarPanel(
       width = 3,
-      div(style = "text-align: right; margin-bottom: 10px;",
-          actionButton("toggleLang", 
-                       icon = icon("language"),
-                       label = "",
-                       style = "background-color: transparent; border: none; font-size: 18px;")
+      # Language selector with flags
+      div(style = "display: flex; justify-content: space-between; margin-bottom: 25px; background-color: #f5f5f5; border-radius: 5px; padding: 10px;",
+          div(style = "font-weight: bold; margin-right: 10px; align-self: center;", 
+              icon("language"), " "),
+          div(style = "display: flex; gap: 10px;",
+              # French button
+              actionButton("setLangFR", 
+                          label = "Français",
+                          icon = icon("flag"),
+                          style = "padding: 5px 10px; border-radius: 4px; font-size: 14px; background-color: #6c757d; color: white; border: none;"),
+              # English button
+              actionButton("setLangEN", 
+                          label = "English",
+                          icon = icon("flag"),
+                          style = "padding: 5px 10px; border-radius: 4px; font-size: 14px; background-color: white; color: #6c757d; border: 1px solid #6c757d;")
+          )
       ),
       h3(HTML(""), 
          class = "sidebar-title"),

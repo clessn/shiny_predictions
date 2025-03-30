@@ -20,9 +20,52 @@ server <- function(input, output, session) {
   # Initialize language (default to French)
   rv$lang <- reactiveVal("fr")
   
-  # Toggle language when the language button is clicked
-  observeEvent(input$toggleLang, {
-    rv$lang(ifelse(rv$lang() == "fr", "en", "fr"))
+  # Initialize button styles based on default language
+  observe({
+    # Run once when the app initializes
+    shinyjs::runjs("
+      if (document.getElementById('setLangFR') && document.getElementById('setLangEN')) {
+        document.getElementById('setLangFR').style.backgroundColor = '#6c757d';
+        document.getElementById('setLangFR').style.color = 'white';
+        document.getElementById('setLangFR').style.border = 'none';
+        
+        document.getElementById('setLangEN').style.backgroundColor = 'white';
+        document.getElementById('setLangEN').style.color = '#6c757d';
+        document.getElementById('setLangEN').style.border = '1px solid #6c757d';
+      }
+    ")
+  })
+  
+  # Set language to French when FR button is clicked
+  observeEvent(input$setLangFR, {
+    rv$lang("fr")
+    
+    # Update button styling to show active state
+    shinyjs::runjs("
+      document.getElementById('setLangFR').style.backgroundColor = '#6c757d';
+      document.getElementById('setLangFR').style.color = 'white';
+      document.getElementById('setLangFR').style.border = 'none';
+      
+      document.getElementById('setLangEN').style.backgroundColor = 'white';
+      document.getElementById('setLangEN').style.color = '#6c757d';
+      document.getElementById('setLangEN').style.border = '1px solid #6c757d';
+    ")
+  })
+  
+  # Set language to English when EN button is clicked
+  observeEvent(input$setLangEN, {
+    rv$lang("en")
+    
+    # Update button styling to show active state
+    shinyjs::runjs("
+      document.getElementById('setLangEN').style.backgroundColor = '#6c757d';
+      document.getElementById('setLangEN').style.color = 'white';
+      document.getElementById('setLangEN').style.border = 'none';
+      
+      document.getElementById('setLangFR').style.backgroundColor = 'white';
+      document.getElementById('setLangFR').style.color = '#6c757d';
+      document.getElementById('setLangFR').style.border = '1px solid #6c757d';
+    ")
   })
   
   # Translation helper function
