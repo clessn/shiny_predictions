@@ -4,15 +4,43 @@ library(sf)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-# Install ggiraph if needed
-if (!requireNamespace("ggiraph", quietly = TRUE)) {
-  install.packages("ggiraph")
-}
 library(ggiraph)
 
-# Load data
+# Load map data first
 map_data <- readRDS("data/map_data.rds")
 map_data$id_riding <- as.character(map_data$id_riding)
+
+##########################################
+# GEOMETRY SIMPLIFICATION FIRST
+##########################################
+
+# Transform to WGS84 for better web rendering
+map_data <- st_transform(map_data, 4326)
+
+# Safe geometry simplification function
+simplify_geometry <- function(g, tolerance = 0.01) {
+  tryCatch({
+    st_simplify(g, dTolerance = tolerance)
+  }, error = function(e) {
+    # If error, try with smaller tolerance
+    tryCatch({
+      st_simplify(g, dTolerance = tolerance/10)
+    }, error = function(e) {
+      # If still error, return original
+      g
+    })
+  })
+}
+
+# Apply simplification to each geometry individually
+geom_list <- st_geometry(map_data)
+simplified_geoms <- lapply(geom_list, function(g) simplify_geometry(g, tolerance = 0.01))
+
+# Create simplified map data
+map_data_simplified <- map_data
+map_data_simplified$geometry <- st_sfc(simplified_geoms, crs = st_crs(map_data))
+
+# Now load the electoral data
 donnees_sondage <- readRDS("data/donnees_sondage_ponderees.rds")
 
 # Define party colors
@@ -24,7 +52,7 @@ party_colors <- c(
   "GP" = "#39D353"    # Green Party - Green
 )
 
-# Process data (simplified from the function)
+# Process electoral data
 df_ridings <- donnees_sondage %>%
   select(riding, people_predict, proportion, pourcentage) %>%
   rename(party = people_predict)
@@ -57,8 +85,8 @@ riding_data <- first_parties %>%
   left_join(second_parties, by = "riding") %>%
   mutate(closeness = first_party_percentage - second_party_percentage)
 
-# Join with map data and prepare for plotting
-plot_data <- map_data %>%
+# Join with SIMPLIFIED map data and prepare for plotting
+plot_data <- map_data_simplified %>%
   left_join(riding_data, by = c("id_riding" = "riding")) %>%
   mutate(
     alpha_category = case_when(
@@ -77,45 +105,14 @@ plot_data <- map_data %>%
     )
   )
 
-# Transform to WGS84 for better web rendering
-plot_data <- st_transform(plot_data, 4326)
-
 ##########################################
-# SAFE GEOMETRY SIMPLIFICATION
-##########################################
-
-# Try a row-by-row approach to avoid topology errors
-simplify_geometry <- function(g, tolerance = 0.01) {
-  tryCatch({
-    st_simplify(g, dTolerance = tolerance)
-  }, error = function(e) {
-    # If error, try with smaller tolerance
-    tryCatch({
-      st_simplify(g, dTolerance = tolerance/10)
-    }, error = function(e) {
-      # If still error, return original
-      g
-    })
-  })
-}
-
-# Apply simplification to each geometry individually in a safer way
-# Get the geometries as a list first
-geom_list <- st_geometry(plot_data)
-# Apply simplification to each geometry individually
-simplified_geoms <- lapply(geom_list, function(g) simplify_geometry(g, tolerance = 0.01))
-# Create a new sf object with simplified geometries
-plot_data_simplified <- plot_data
-plot_data_simplified$geometry <- st_sfc(simplified_geoms, crs = st_crs(plot_data))
-
-##########################################
-# OPTION 1: GGIRAPH INTERACTIVE MAP
+# GGIRAPH INTERACTIVE MAP
 ##########################################
 
 # Create interactive ggplot with ggiraph
 ggiraph_map <- ggplot() +
   geom_sf_interactive(
-    data = plot_data_simplified,
+    data = plot_data,
     aes(fill = party, 
         alpha = alpha_category,
         tooltip = tooltip_text, 
@@ -146,3 +143,5 @@ girafe_map <- girafe(
 
 # Display ggiraph map
 print(girafe_map)
+
+
