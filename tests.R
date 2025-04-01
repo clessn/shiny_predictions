@@ -75,4 +75,6 @@ for (rid in quebec_city_ridings) {
   }
 }
 
-test <- read.csv("https://raw.githubusercontent.com/clessn/agregateur_data/main/data/df.csv") 
+library(dplyr)
+library(sf)
+test <- readRDS("data/map_statcan.rds") %>% st_drop_geometry() %>% select(id_riding, name_riding_en)
