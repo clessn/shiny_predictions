@@ -15,7 +15,7 @@ library(tidyr)
 library(ggiraph) # Pour les fonctionnalités hover
 
 # Load map data
-map_data <- readRDS("data/map_data_simplified.rds")
+map_data <- readRDS("data/map_statcan.rds")
 map_data$id_riding <- as.character(map_data$id_riding)
 
 # City mapping list - centralized definition to avoid redundancy
