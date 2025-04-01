@@ -19,6 +19,8 @@ server <- function(input, output, session) {
   
   # Initialize language (default to French)
   rv$lang <- reactiveVal("fr")
+  # Store the initial language value
+  rv$initial_lang <- "fr"
   
   # Initialize button styles based on default language
   observe({
@@ -171,9 +173,9 @@ server <- function(input, output, session) {
           first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
           TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
         ),
-        # Create tooltip text based on current language
+        # Create tooltip text based on current language - use language-appropriate riding name
         tooltip_text = paste0(
-          "<strong>", name_riding_fr, "</strong><br>",
+          "<strong>", ifelse(rv$lang() == "fr", name_riding_fr, name_riding_en), "</strong><br>",
           ifelse(rv$lang() == "fr", "Parti en tête: ", "Leading party: "),
           "<span style='color:", party_colors[party], ";'>", 
           party, " (", round(first_party_percentage, 1), "%)</span><br>",
@@ -185,7 +187,7 @@ server <- function(input, output, session) {
     # Filter by party if selected
     if (input$partyPrediction == t("all_parties")) {
       return(map_filtered)
-    } else if (input$partyPrediction == t("battlefields")) {
+    } else if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
       # Now we return ALL ridings but with the battlefield intensity calculated
       return(map_filtered)
     } else if (input$partyPrediction %in% partis_politiques) {
@@ -319,7 +321,7 @@ server <- function(input, output, session) {
     }
     
     # Create a different map based on whether we're in Battlefields mode
-    if (input$partyPrediction == t("battlefields")) {
+    if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
       # Battlefield gradient map (black -> white -> yellow)
       p <- ggplot() +
         geom_sf_interactive(data = plot_data, 
@@ -461,7 +463,7 @@ server <- function(input, output, session) {
             })
             
             # Create city map with different styling based on mode
-            if (input$partyPrediction == t("battlefields")) {
+            if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
               # Battlefield gradient map for cities
               p <- ggplot() +
                 geom_sf_interactive(data = city_data, 
@@ -565,7 +567,7 @@ server <- function(input, output, session) {
     df_ridings <- rv$processed_data()
     
     # Apply party filter
-    if (input$partyPrediction == t("battlefields")) {
+    if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
       # For Battlefields, show all ridings but sort by win probability (lowest probability first)
       df_ridings <- df_ridings %>% arrange(first_party_percentage)
     } else if (input$partyPrediction %in% partis_politiques) {
@@ -576,8 +578,10 @@ server <- function(input, output, session) {
     # Format data for display
     df_ridings %>% 
       mutate(
-        # Join with map_data to get riding name in French
-        riding_name = map_data$name_riding_fr[match(riding, map_data$id_riding)],
+        # Join with map_data to get riding name in appropriate language
+        riding_name = ifelse(rv$lang() == "fr", 
+                         map_data$name_riding_fr[match(riding, map_data$id_riding)],
+                         map_data$name_riding_en[match(riding, map_data$id_riding)]),
         # Use ID if name not found
         riding_name = ifelse(is.na(riding_name), as.character(riding), riding_name),
         # Calculate closeness category for display
@@ -715,7 +719,7 @@ server <- function(input, output, session) {
          )
        ),
        # In battlefield mode, sort by percentage (ascending = most competitive first)
-       order = if(input$partyPrediction == t("battlefields")) list(list(3, 'asc')) else NULL
+       order = if(input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") list(list(3, 'asc')) else NULL
      ),
      rownames = FALSE,
      class = 'cell-border stripe compact'
@@ -727,7 +731,7 @@ server <- function(input, output, session) {
      )
    
    # Apply specific styling based on mode
-   if (input$partyPrediction == t("battlefields")) {
+   if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
      # For Battlefields, use plain text for certainty column (no background color)
      dt <- dt %>% formatStyle(
        columns = status_col,
@@ -761,6 +765,11 @@ server <- function(input, output, session) {
   observeEvent(list(input$partyPrediction, rv$lang()), {
     for (key in names(city_data_cache)) {
       city_data_cache[[key]] <- NULL
+    }
+    
+    # Force UI refresh when language changes
+    if (rv$lang() != rv$initial_lang) {
+      session$sendCustomMessage(type = "refreshUI", message = list())
     }
   }, ignoreInit = TRUE)  # Ignore initial values to avoid clearing cache at startup
   
@@ -806,9 +815,6 @@ server <- function(input, output, session) {
   })
   output$dataLinkLabel <- renderText({ t("data_link") })
   output$dataUpdatedText <- renderText({ t("data_updated") })
-  
-  # Modified to reflect data source change - no longer showing number of respondents from previous survey
-  output$respondentsText <- renderText({ paste0(t("respondents"), "N/A (Aggregated data)") })
   
   output$hoverInfoText <- renderUI({ HTML(paste0("<i class='fas fa-info-circle'></i> ", t("hover_info"))) })
   output$appTitle <- renderUI({ HTML(t("app_title")) })

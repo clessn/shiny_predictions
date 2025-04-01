@@ -29,6 +29,18 @@ ui <- fluidPage(
     # Load CSS via CDN for better performance
     tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"),
     
+    # Add JavaScript for handling UI refreshes when language changes
+    tags$script(HTML("
+      Shiny.addCustomMessageHandler('refreshUI', function(message) {
+        // Force Shiny to redraw UI components when language changes
+        $(window).trigger('resize');
+        // Re-initialize any custom UI elements that may need refreshing
+        if (window.girafe) {
+          window.girafe.forEach(function(g) { g.resize(); });
+        }
+      });
+    ")),
+    
     # Directly embed font-face for pixel font
     tags$style(HTML("
       @font-face {
@@ -642,7 +654,7 @@ ui <- fluidPage(
       
       
       conditionalPanel(
-        condition = "input.partyPrediction != 'Battlefields' && input.partyPrediction != 'Champs de bataille'",
+        condition = "input.partyPrediction != 'Battlefields' && input.partyPrediction != 'Champs de bataille' && input.partyPrediction != 'battlefields'",
         div(class = "party-legend-container",
             h4(textOutput("leadStrengthTitle"), class = "party-legend-title"),
             
@@ -700,7 +712,7 @@ ui <- fluidPage(
       
       # Légende spécifique au mode Battlefields - réintégrée
       conditionalPanel(
-        condition = "input.partyPrediction == 'Battlefields' || input.partyPrediction == 'Champs de bataille'",
+        condition = "input.partyPrediction == 'Battlefields' || input.partyPrediction == 'Champs de bataille' || input.partyPrediction == 'battlefields'",
         div(class = "battlefield-legend-container",
             h4(textOutput("competitivenessTitle"), class = "bf-legend-title"),
             div(class = "battlefield-gradient-bar"),
@@ -729,7 +741,6 @@ ui <- fluidPage(
       # Information section at bottom of sidebar
       div(class = "sidebar-footer",
           p(textOutput("dataUpdatedText")),
-          p(textOutput("respondentsText")),
           p(htmlOutput("hoverInfoText"))
       ),
       
