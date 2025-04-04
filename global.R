@@ -304,8 +304,8 @@ city_mapping <- list(
 party_colors <- c(
   "LPC" = "#D91920",  # Liberal - Red
   "CPC" = "#0E4C92",  # Conservative - Blue
-  "NDP" = "#FF8000",  # NDP - Orange
-  "BQ" = "#00B2FF",   # Bloc Québécois - Light blue
+  "NDP" = "#f58220",  # NDP - Orange
+  "BQ" = "#29b2e6",   # Bloc Québécois - Light blue
   "GPC" = "#39D353"   # Green Party - Green
 )
 
@@ -328,7 +328,7 @@ party_names <- list(
 )
 
 # Define Canadian political parties
-partis_politiques <- c("LPC", "CPC", "BQ", "NDP", "GPC")
+partis_politiques <- c("LPC", "CPC", "NDP", "BQ", "GPC")
 
 # Dictionary for translations
 translations <- list(

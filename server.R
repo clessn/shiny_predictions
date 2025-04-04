@@ -222,7 +222,7 @@ server <- function(input, output, session) {
     selectInput(
       "partyPrediction", 
       NULL, # Remove the label here since we already have a header above
-      choices = c(t("all_parties"), "LPC", "CPC", "BQ", "NDP", "GPC", t("battlefields")),
+      choices = c(t("all_parties"), t("battlefields"), "LPC", "CPC", "BQ", "NDP", "GPC"),
       selected = t("all_parties")
     )
   })
