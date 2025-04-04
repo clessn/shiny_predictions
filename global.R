@@ -16,7 +16,72 @@ library(ggiraph) # Pour les fonctionnalités hover
 
 # Load map data
 map_data <- readRDS("data/map_statcan.rds")
+
+# Check if map_data is properly loaded or if it needs fixing
+if (is.character(map_data$id_riding) && length(map_data$id_riding) == 1 && grepl("^c\\(", map_data$id_riding[1])) {
+  # Extract the data from the vector-like string
+  cat("Found a string-formatted id_riding, parsing...\n")
+  
+  # Extract the riding IDs
+  riding_ids_str <- gsub("^c\\(|\\)$", "", map_data$id_riding[1])
+  riding_ids <- strsplit(riding_ids_str, ",\\s*")[[1]]
+  
+  # Extract the English riding names
+  riding_en_str <- gsub("^c\\(|\\)$", "", map_data$name_riding_en[1])
+  riding_en <- strsplit(riding_en_str, ",\\s*")[[1]]
+  
+  # Extract the French riding names
+  riding_fr_str <- gsub("^c\\(|\\)$", "", map_data$name_riding_fr[1])
+  riding_fr <- strsplit(riding_fr_str, ",\\s*")[[1]]
+  
+  # We need to reload the map data correctly
+  cat("Reloading map_data to fix structure...\n")
+  # Save the original data first
+  map_data_original <- map_data
+  
+  # Try to reload the data properly
+  tryCatch({
+    # For safety, create a fresh copy of the map data from simplified version
+    map_data <- readRDS("data/map_simplified.rds")
+    cat("Loaded simplified map data instead\n")
+  }, error = function(e) {
+    # If simplified data fails, try with raw data but rebuild it
+    cat("Failed to load simplified data, rebuilding from original...\n")
+    
+    # Extract geometries from original data if possible
+    geom <- st_geometry(map_data_original)
+    
+    # Create a new data frame with fixed columns
+    df_new <- data.frame(
+      id_riding = riding_ids,
+      name_riding_en = riding_en,
+      name_riding_fr = riding_fr,
+      id_province = rep(NA, length(riding_ids))
+    )
+    
+    # Create a new sf object
+    map_data <- st_sf(df_new, geometry = geom)
+  })
+  
+  cat("Map data reconstruction complete\n")
+} else if (!is.character(map_data$id_riding)) {
+  # Convert id_riding to character if it's not already
+  map_data$id_riding <- as.character(map_data$id_riding)
+  cat("Converted id_riding to character\n")
+}
+
+# Important: ensure map_data has consistent string columns
 map_data$id_riding <- as.character(map_data$id_riding)
+map_data$name_riding_en <- as.character(map_data$name_riding_en)
+map_data$name_riding_fr <- as.character(map_data$name_riding_fr)
+
+# Print the first few entries to verify the data looks good
+cat("Sample map_data after processing:\n")
+print(head(data.frame(
+  id_riding = map_data$id_riding,
+  name_en = map_data$name_riding_en,
+  name_fr = map_data$name_riding_fr
+), 5))
 
 # City mapping list - centralized definition to avoid redundancy
 city_mapping <- list(

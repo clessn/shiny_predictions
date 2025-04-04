@@ -75,9 +75,140 @@ server <- function(input, output, session) {
     translations[[rv$lang()]][[key]]
   }
   
-  # Load the new dataset - MODIFIED
+  # Load the new dataset with proper riding name mapping
   rv$new_data <- reactive({
-    read.csv("https://raw.githubusercontent.com/clessn/agregateur_data/main/data/df.csv")
+    # Load data 
+    df <- read.csv("https://raw.githubusercontent.com/clessn/agregateur_data/main/data/df.csv")
+    
+    # Create a lookup table from map_data for riding names - forcing numeric ids for consistency
+    riding_names <- data.frame(
+      riding_id = as.character(map_data$id_riding),
+      name_riding_en = as.character(map_data$name_riding_en),
+      name_riding_fr = as.character(map_data$name_riding_fr),
+      stringsAsFactors = FALSE
+    )
+    
+    # Debug output to help diagnose issues
+    print("CSV riding_id sample:")
+    print(head(df$riding_id, 3))
+    print("Map riding_id sample:")
+    print(head(riding_names$riding_id, 3))
+    
+    # Make sure riding_id is a character for consistent joining
+    df$riding_id <- trimws(as.character(df$riding_id))
+    riding_names$riding_id <- trimws(as.character(riding_names$riding_id))
+    
+    # Debug output to check match counts
+    print(paste("CSV rows:", nrow(df)))
+    print(paste("Map data rows:", nrow(riding_names)))
+    print(paste("Matching IDs:", sum(df$riding_id %in% riding_names$riding_id)))
+    
+    # Create direct sample check to verify first few ridings
+    sample_csv <- head(df$riding_id, 5)
+    sample_map <- head(riding_names$riding_id, 5)
+    print("Direct comparison of first 5 IDs:")
+    for (i in 1:5) {
+      print(paste("CSV:", sample_csv[i], "Map:", sample_map[i], "Match:", sample_csv[i] == sample_map[i]))
+    }
+    
+    # Verify the entire dataset with explicit comparison
+    df$id_match <- df$riding_id %in% riding_names$riding_id
+    print(paste("Matched IDs verified:", sum(df$id_match), "out of", nrow(df)))
+    
+    # Join the riding names to our data
+    df <- df %>%
+      left_join(riding_names, by = "riding_id")
+    
+    # Check join result
+    print(paste("Joined data rows:", nrow(df)))
+    print(paste("Rows with names:", sum(!is.na(df$name_riding_en))))
+    
+    # Print some sample joined data to verify
+    print("Sample of joined data:")
+    print(head(data.frame(
+      riding_id = df$riding_id,
+      name_en = df$name_riding_en,
+      name_fr = df$name_riding_fr
+    ), 5))
+    
+    # If the join didn't work well, let's create a fallback
+    if (sum(!is.na(df$name_riding_en)) < 50) { # If fewer than 50 ridings got names
+      print("WARNING: Join failed to match names - creating fallback mapping")
+      
+      # Load or create a direct mapping
+      riding_map <- data.frame(
+        riding_id = df$riding_id,
+        # Create English names directly based on province and riding number
+        name_riding_en = paste0(
+          ifelse(substr(df$riding_id, 1, 2) == "10", "Newfoundland: ", 
+                 ifelse(substr(df$riding_id, 1, 2) == "11", "PEI: ", 
+                        ifelse(substr(df$riding_id, 1, 2) == "12", "Nova Scotia: ",
+                               ifelse(substr(df$riding_id, 1, 2) == "13", "New Brunswick: ",
+                                      ifelse(substr(df$riding_id, 1, 2) == "24", "Quebec: ",
+                                             ifelse(substr(df$riding_id, 1, 2) == "35", "Ontario: ",
+                                                    ifelse(substr(df$riding_id, 1, 2) == "46", "Manitoba: ",
+                                                           ifelse(substr(df$riding_id, 1, 2) == "47", "Saskatchewan: ",
+                                                                  ifelse(substr(df$riding_id, 1, 2) == "48", "Alberta: ",
+                                                                         ifelse(substr(df$riding_id, 1, 2) == "59", "BC: ",
+                                                                                "Territory: "
+                                                                         )
+                                                                  )
+                                                           )
+                                                    )
+                                             )
+                                      )
+                               )
+                        )
+                 )
+          ),
+          "Riding ", 
+          substr(df$riding_id, 3, 5)
+        ),
+        # Create French names similarly but with French province names
+        name_riding_fr = paste0(
+          ifelse(substr(df$riding_id, 1, 2) == "10", "Terre-Neuve: ", 
+                 ifelse(substr(df$riding_id, 1, 2) == "11", "Î.-P.-É.: ", 
+                        ifelse(substr(df$riding_id, 1, 2) == "12", "Nouvelle-Écosse: ",
+                               ifelse(substr(df$riding_id, 1, 2) == "13", "Nouveau-Brunswick: ",
+                                      ifelse(substr(df$riding_id, 1, 2) == "24", "Québec: ",
+                                             ifelse(substr(df$riding_id, 1, 2) == "35", "Ontario: ",
+                                                    ifelse(substr(df$riding_id, 1, 2) == "46", "Manitoba: ",
+                                                           ifelse(substr(df$riding_id, 1, 2) == "47", "Saskatchewan: ",
+                                                                  ifelse(substr(df$riding_id, 1, 2) == "48", "Alberta: ",
+                                                                         ifelse(substr(df$riding_id, 1, 2) == "59", "C.-B.: ",
+                                                                                "Territoire: "
+                                                                         )
+                                                                  )
+                                                           )
+                                                    )
+                                             )
+                                      )
+                               )
+                        )
+                 )
+          ),
+          "Circonscription ", 
+          substr(df$riding_id, 3, 5)
+        )
+      )
+      
+      # Replace the names in df with our manually created ones
+      df$name_riding_en <- riding_map$name_riding_en
+      df$name_riding_fr <- riding_map$name_riding_fr
+      
+      print("Fallback mapping created")
+      print(head(riding_map, 3))
+    }
+    
+    # For any ridings that don't have names, create fallback names
+    df$name_riding_en <- ifelse(is.na(df$name_riding_en), 
+                              paste0("Riding ", df$riding_id),
+                              df$name_riding_en)
+    df$name_riding_fr <- ifelse(is.na(df$name_riding_fr), 
+                              paste0("Circonscription ", df$riding_id),
+                              df$name_riding_fr)
+    
+    return(df)
   })
   
   # Initialize an empty cache using reactiveValues
@@ -116,6 +247,7 @@ server <- function(input, output, session) {
         riding = riding_id,
         party = prediction,
         first_party_percentage = probability
+        # Note: name_riding_en and name_riding_fr are already added from our map_data
       ) %>%
       mutate(
         # Convert probability from 0-1 scale to 0-100 scale if needed
@@ -133,76 +265,98 @@ server <- function(input, output, session) {
     return(df_processed)
   })
   
-  # Create a more efficient reactive for filtered map data
-  filtered_map_data <- reactive({
-    # Get processed riding data
-    df_ridings <- rv$processed_data()
-    
-    # Ensure id_riding is a character string in both datasets
-    map_data <- map_data # access from global environment
-    map_data$id_riding <- as.character(map_data$id_riding)
-    df_ridings$riding <- as.character(df_ridings$riding)
-    
-    # Join with riding data to add party information
-    map_filtered <- map_data %>%
-      left_join(df_ridings, by = c("id_riding" = "riding"))
-    
-    # Add alpha categories based on probability (higher probability = more solid lead)
-    map_filtered <- map_filtered %>%
-      mutate(
-        # Use probability for alpha categories
-        # Higher probability = darker (more solid lead)
-        # Lower probability = lighter (less certain)
-        alpha_category = case_when(
-          first_party_percentage <= 52 ~ 0.35,                    # Too close to call - VERY PALE
-          first_party_percentage > 52 & first_party_percentage <= 58 ~ 0.5,  # Toss up - PALE
-          first_party_percentage > 58 & first_party_percentage <= 70 ~ 0.7,  # Competitive - MEDIUM
-          first_party_percentage > 70 & first_party_percentage <= 85 ~ 0.85, # Likely win - DARK
-          first_party_percentage > 85 ~ 1.0,                      # Safe win - VERY DARK
-          TRUE ~ 0.6                                              # Default
-        ),
-        # Calculate battlefield intensity as the inverse of probability
-        # Lower probability = higher battlefield intensity (more competitive)
-        battlefield_intensity = pmin(100, pmax(0, 100 - first_party_percentage)),
-        # Add closeness category
-        closeness_category = case_when(
-          first_party_percentage <= 52 ~ ifelse(rv$lang() == "fr", "Trop serré pour prédire", "Too close to call"),
-          first_party_percentage > 52 & first_party_percentage <= 58 ~ ifelse(rv$lang() == "fr", "Course serrée", "Toss up"),
-          first_party_percentage > 58 & first_party_percentage <= 70 ~ ifelse(rv$lang() == "fr", "Avance modérée", "Competitive"),
-          first_party_percentage > 70 & first_party_percentage <= 85 ~ ifelse(rv$lang() == "fr", "Avance confortable", "Likely win"),
-          first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
-          TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
-        ),
-        # Create tooltip text based on current language - use language-appropriate riding name
-        tooltip_text = paste0(
-          "<strong>", ifelse(rv$lang() == "fr", name_riding_fr, name_riding_en), "</strong><br>",
-          ifelse(rv$lang() == "fr", "Parti en tête: ", "Leading party: "),
-          "<span style='color:", party_colors[party], ";'>", 
-          party, " (", round(first_party_percentage, 1), "%)</span><br>",
-          ifelse(rv$lang() == "fr", "Certitude: ", "Certainty: "), 
-          closeness_category
-        )
-      )
-    
-    # Filter by party if selected
+# Create a more efficient reactive for filtered map data
+ filtered_map_data <- reactive({
+   # Get processed riding data (contains predictions, IDs)
+   df_ridings <- rv$processed_data() 
+
+   # Create a clean copy of the original map data (contains geometry, IDs, ORIGINAL NAMES)
+   map_data_copy <- map_data %>%
+     mutate(
+       id_riding = as.character(id_riding),
+       name_riding_en_map = as.character(name_riding_en), 
+       name_riding_fr_map = as.character(name_riding_fr)
+     ) %>%
+     select(id_riding, name_riding_en_map, name_riding_fr_map, geometry) 
+
+   # Select only prediction-related columns and the ID from df_ridings
+   df_ridings_subset <- df_ridings %>%
+     select(
+       riding, party, first_party_percentage, 
+       second_party, second_party_percentage, closeness 
+     ) %>%
+     mutate(riding = as.character(riding)) 
+
+   # Join map data (with definitive names) to the prediction subset
+   map_filtered <- map_data_copy %>%
+     left_join(df_ridings_subset, by = c("id_riding" = "riding"))
+
+   # Handle NAs and create fallbacks using definitive names
+   map_filtered <- map_filtered %>%
+     mutate(
+       party = ifelse(is.na(party), "Unknown", party),
+       first_party_percentage = ifelse(is.na(first_party_percentage), 50, first_party_percentage),
+       name_riding_en_map = ifelse(is.na(name_riding_en_map) | name_riding_en_map == "", paste0("Riding ", id_riding), name_riding_en_map),
+       name_riding_fr_map = ifelse(is.na(name_riding_fr_map) | name_riding_fr_map == "", paste0("Circonscription ", id_riding), name_riding_fr_map)
+     )
+
+   # !!! PRE-CALCULATE NAME BASED ON LANGUAGE !!!
+   current_language <- rv$lang() # Get current language once
+   map_filtered <- map_filtered %>%
+       mutate(
+           current_display_name = if (current_language == "fr") name_riding_fr_map else name_riding_en_map
+       )
+   # !!! END PRE-CALCULATION !!!
+
+   # Add other display columns (alpha, categories, tooltip)
+   map_filtered <- map_filtered %>%
+     mutate(
+       alpha_category = case_when( # ... (alpha logic) ...
+         first_party_percentage <= 52 ~ 0.35,
+         first_party_percentage > 52 & first_party_percentage <= 58 ~ 0.5,
+         first_party_percentage > 58 & first_party_percentage <= 70 ~ 0.7,
+         first_party_percentage > 70 & first_party_percentage <= 85 ~ 0.85,
+         first_party_percentage > 85 ~ 1.0,
+         TRUE ~ 0.6
+       ),
+       battlefield_intensity = pmin(100, pmax(0, 100 - first_party_percentage)),
+       closeness_category = case_when( # ... (closeness logic) ...
+         first_party_percentage <= 52 ~ ifelse(rv$lang() == "fr", "Trop serré pour prédire", "Too close to call"),
+         first_party_percentage > 52 & first_party_percentage <= 58 ~ ifelse(rv$lang() == "fr", "Course serrée", "Toss up"),
+         first_party_percentage > 58 & first_party_percentage <= 70 ~ ifelse(rv$lang() == "fr", "Avance modérée", "Competitive"),
+         first_party_percentage > 70 & first_party_percentage <= 85 ~ ifelse(rv$lang() == "fr", "Avance confortable", "Likely win"),
+         first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
+         TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
+       ),
+       
+       # Create tooltip text using the PRE-CALCULATED name
+       tooltip_text = paste0(
+         "<strong>", current_display_name, "</strong><br>", # Use pre-calculated name
+         "<span style='font-size: 9px; color: #777;'>ID: ", id_riding, "</span><br>",
+         ifelse(rv$lang() == "fr", "Parti en tête: ", "Leading party: "),
+         "<span style='color:", ifelse(party %in% names(party_colors), party_colors[party], "#777777"), ";'>", 
+         party, " (", round(first_party_percentage, 1), "%)</span><br>",
+         ifelse(rv$lang() == "fr", "Certitude: ", "Certainty: "), 
+         closeness_category
+       )
+       # REMOVE the old 'display_name' calculation if it existed here
+     )
+
+   # Filter by party (rest of the function remains the same)
+   # ... (filtering logic) ...
     if (input$partyPrediction == t("all_parties")) {
-      return(map_filtered)
-    } else if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
-      # Now we return ALL ridings but with the battlefield intensity calculated
-      return(map_filtered)
-    } else if (input$partyPrediction %in% partis_politiques) {
-      # For party-specific view: add a column to show selected party's ridings in color
-      # and show others in gray
-      return(map_filtered %>% 
-               mutate(selected_party = party == input$partyPrediction,
-                     # Keep original party for the selected ones, set "other" for non-selected
+     return(map_filtered)
+   } else if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
+     return(map_filtered)
+   } else if (input$partyPrediction %in% partis_politiques) {
+     return(map_filtered %>% 
+              mutate(selected_party = party == input$partyPrediction,
                      display_party = ifelse(selected_party, party, "other")))
-    } else {
-      return(map_filtered)
-    }
-  })
-  
-  # Improved city data function with caching
+   } else {
+     return(map_filtered)
+   }
+ })  
+
   get_city_data <- function(city_code) {
     # Make sure to properly isolate and capture dependencies
     filtered_data <- isolate(filtered_map_data())
@@ -561,65 +715,64 @@ server <- function(input, output, session) {
   output$kitchenerMap <- renderCityMap("kitchener_waterloo", "Kitchener-Waterloo")
   output$londonMap <- renderCityMap("london", "London")
   
-  # Create a reactive for table data to avoid recalculation
-  table_data <- reactive({
-    # Get processed data
-    df_ridings <- rv$processed_data()
-    
-    # Apply party filter
-    if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
-      # For Battlefields, show all ridings but sort by win probability (lowest probability first)
-      df_ridings <- df_ridings %>% arrange(first_party_percentage)
-    } else if (input$partyPrediction %in% partis_politiques) {
-      df_ridings <- df_ridings %>% 
-        filter(party == input$partyPrediction)
-    }
-    
-    # Format data for display
-    df_ridings %>% 
-      mutate(
-        # Join with map_data to get riding name in appropriate language
-        riding_name = ifelse(rv$lang() == "fr", 
-                         map_data$name_riding_fr[match(riding, map_data$id_riding)],
-                         map_data$name_riding_en[match(riding, map_data$id_riding)]),
-        # Use ID if name not found
-        riding_name = ifelse(is.na(riding_name), as.character(riding), riding_name),
-        # Calculate closeness category for display
-        closeness_category = case_when(
-          first_party_percentage <= 52 ~ ifelse(rv$lang() == "fr", "Trop serré pour prédire", "Too close to call"),
-          first_party_percentage > 52 & first_party_percentage <= 58 ~ ifelse(rv$lang() == "fr", "Course serrée", "Toss up"),
-          first_party_percentage > 58 & first_party_percentage <= 70 ~ ifelse(rv$lang() == "fr", "Avance modérée", "Competitive"),
-          first_party_percentage > 70 & first_party_percentage <= 85 ~ ifelse(rv$lang() == "fr", "Avance confortable", "Likely win"),
-          first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
-          TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
-        ),
-        # Store original percentage for sorting
-        percentage_value = first_party_percentage,
-        # Format percentage with % symbol (keep for reference)
-        win_probability = paste0(round(first_party_percentage, 1), "%")
-      ) %>%
-      # Rename columns for display
-      select(
-        # Use dynamic column names based on current language
-        if (rv$lang() == "fr") {
-          c(
-            "Circonscription" = "riding_name",
-            "Parti en tête" = "party",
-            "Certitude" = "closeness_category",
-            "Pourcentage" = "percentage_value"  # Hidden column for sorting
-          )
-        } else {
-          c(
-            "Riding" = "riding_name",
-            "Leading party" = "party",
-            "Certainty" = "closeness_category",
-            "Percentage" = "percentage_value"  # Hidden column for sorting
-          )
-        }
-      )
-  })
-  
-  # Render data table
+
+# Create a reactive for table data to avoid recalculation
+ table_data <- reactive({
+   # Get processed data - Debug output showed this HAS correct names & IDs
+   df_ridings <- rv$processed_data() 
+     
+   # Apply party filter
+   # ... (filtering logic remains same) ...
+   if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
+     df_ridings <- df_ridings %>% arrange(first_party_percentage)
+   } else if (input$partyPrediction %in% partis_politiques) {
+     df_ridings <- df_ridings %>% 
+       filter(party == input$partyPrediction)
+   }
+
+   # !!! PRE-CALCULATE NAME BASED ON LANGUAGE !!!
+   current_language <- rv$lang() # Get current language once
+   df_ridings_named <- df_ridings %>%
+     mutate(
+       # Ensure source names are character and handle NAs
+       name_riding_en = as.character(name_riding_en),
+       name_riding_fr = as.character(name_riding_fr),
+       name_riding_en = ifelse(is.na(name_riding_en) | name_riding_en == "", paste0("Riding ", riding), name_riding_en),
+       name_riding_fr = ifelse(is.na(name_riding_fr) | name_riding_fr == "", paste0("Circonscription ", riding), name_riding_fr),
+       # Create the single name column based on current language
+       riding_name = if (current_language == "fr") name_riding_fr else name_riding_en
+     )
+   # !!! END PRE-CALCULATION !!!
+
+   # Format data for display using the pre-calculated 'riding_name'
+   df_display <- df_ridings_named %>% 
+     mutate(
+       # Calculate closeness category
+       closeness_category = case_when( # ... (closeness logic) ...
+         first_party_percentage <= 52 ~ ifelse(rv$lang() == "fr", "Trop serré pour prédire", "Too close to call"),
+         first_party_percentage > 52 & first_party_percentage <= 58 ~ ifelse(rv$lang() == "fr", "Course serrée", "Toss up"),
+         first_party_percentage > 58 & first_party_percentage <= 70 ~ ifelse(rv$lang() == "fr", "Avance modérée", "Competitive"),
+         first_party_percentage > 70 & first_party_percentage <= 85 ~ ifelse(rv$lang() == "fr", "Avance confortable", "Likely win"),
+         first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
+         TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
+       ),
+       # Store original percentage for sorting
+       percentage_value = first_party_percentage
+     ) %>%
+     # Select and rename columns for the final table output
+     # Note: We already created 'riding_name' correctly above
+     select(
+       if (rv$lang() == "fr") {
+         # Use the pre-calculated riding_name
+         c("Circonscription" = "riding_name", "Parti en tête" = "party", "Certitude" = "closeness_category", "Pourcentage" = "percentage_value") 
+       } else {
+         # Use the pre-calculated riding_name
+         c("Riding" = "riding_name", "Leading party" = "party", "Certainty" = "closeness_category", "Percentage" = "percentage_value")
+       }
+     )
+     
+   return(df_display)
+ }) # Render data table
   output$dataTable <- renderDataTable({
    # Use the reactive table data
    display_data <- table_data()
@@ -743,7 +896,7 @@ server <- function(input, output, session) {
      dt <- dt %>% formatStyle(
        columns = party_col,
        backgroundColor = styleEqual(
-         names(party_colors),
+         partis_politiques,  # Use the list of political parties directly
          sapply(party_colors, function(color) {
            paste0(color, "25")  # Add transparency to the color
          })
