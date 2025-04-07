@@ -575,7 +575,7 @@ server <- function(input, output, session) {
     p <- p
     
     # Convertir en girafe pour l'interactivité
-    girafe(ggobj = p, width_svg = 14, height_svg = 8, options = list(
+    girafe(ggobj = p, width_svg = 8, height_svg = 8, options = list(
       opts_tooltip(
         opacity = 0.9,
         css = "background-color: white; color: #333333; padding: 10px; border-radius: 5px; border: 1px solid #cccccc; font-family: 'Times New Roman', Times, serif;"
