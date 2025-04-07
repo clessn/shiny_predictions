@@ -587,7 +587,7 @@ ui <- fluidPage(
       
       .main-title {
         font-family: 'PixelOperator', monospace;
-        font-size: 32px;
+        font-size: 65px;
         font-weight: 700;
         color: #222222;
         margin: 0;

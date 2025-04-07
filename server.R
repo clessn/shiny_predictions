@@ -982,15 +982,18 @@ server <- function(input, output, session) {
     # Get party seats from reactive values
     if (is.null(rv$party_seats)) return(HTML(""))
     
-    # Create party rows with seat counts
+    # Create party rows with seat counts and party leader images
     seat_html <- lapply(names(rv$party_seats), function(party) {
-      color_style <- paste0("color: ", party_colors[party], "; font-weight: bold;")
+      # Define the image path without "www/" prefix (Shiny already looks there)
+      img_path <- paste0(tolower(party), ".png")
+      
       count <- rv$party_seats[party]
       label <- ifelse(rv$lang() == "fr", "sièges", "seats")
       
+      # Create HTML for this party row
       HTML(paste0(
-        "<div style='display: flex; justify-content: space-between; margin: 5px 0;'>",
-        "<span style='", color_style, "'>", party, "</span>",
+        "<div style='display: flex; justify-content: space-between; align-items: center; margin: 8px 0;'>",
+        "<div><img src='", img_path, "' style='width: 25px; height: auto;' alt='", party, "'></div>",
         "<span>", count, " ", label, "</span>",
         "</div>"
       ))
