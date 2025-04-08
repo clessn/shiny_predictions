@@ -972,6 +972,16 @@ server <- function(input, output, session) {
   output$hoverInfoText <- renderUI({ HTML(paste0("<i class='fas fa-info-circle'></i> ", t("hover_info"))) })
   output$appTitle <- renderUI({ HTML(t("app_title")) })
   
+  output$appSubtitle <- renderUI({
+    subtitle_text <- if(rv$lang() == "fr") {
+      "Prédiction du nombre de sièges par parti par jour"
+    } else {
+      "Daily prediction of seats by party"
+    }
+    
+    HTML(paste0("<em>", subtitle_text, "</em>"))
+  })
+  
   # Seat count title and legend
   output$seatCountTitle <- renderText({ t("seat_count") })
   

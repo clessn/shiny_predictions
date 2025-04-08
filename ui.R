@@ -585,14 +585,15 @@ ui <- fluidPage(
         text-align: center;
       }
       
-      .main-title {
-        font-family: 'PixelOperator', monospace;
-        font-size: 65px;
-        font-weight: 700;
-        color: #222222;
-        margin: 0;
-        line-height: 1.2;
-        letter-spacing: -0.02em;
+      .main-title .shiny-html-output {
+      font-family: 'PixelOperator', monospace;
+      font-size: 55px;  /* Adjust this size as needed */
+      font-weight: 700;
+      color: #222222;
+      margin: 0;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      display: inline-block;
       }
       
       .shrug-icon {
@@ -601,6 +602,15 @@ ui <- fluidPage(
         font-size: 1.1em; /* Plus grand que le texte normal */
         display: inline-block;
         margin-left: 8px;
+      }
+      
+      .app-subtitle {
+      font-family: 'PixelOperator', monospace;
+      font-size: 25px;
+      color: #666666;
+      margin-top: 10px;
+      text-align: center;
+      font-style: italic;
       }
       
       .subtitle {
@@ -772,7 +782,9 @@ ui <- fluidPage(
           h1(class = "main-title",
              htmlOutput("appTitle"),
              span(class = "shrug-icon", HTML("¯\\_(ツ)_/¯"))
-          )
+          ),
+          # Add subtitle div
+          div(class = "app-subtitle", htmlOutput("appSubtitle"))
       ),
       
       # Canada map at the top with container and section header
