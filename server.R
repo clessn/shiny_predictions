@@ -202,11 +202,11 @@ server <- function(input, output, session) {
     
     # For any ridings that don't have names, create fallback names
     df$name_riding_en <- ifelse(is.na(df$name_riding_en), 
-                              paste0("Riding ", df$riding_id),
-                              df$name_riding_en)
+                                paste0("Riding ", df$riding_id),
+                                df$name_riding_en)
     df$name_riding_fr <- ifelse(is.na(df$name_riding_fr), 
-                              paste0("Circonscription ", df$riding_id),
-                              df$name_riding_fr)
+                                paste0("Circonscription ", df$riding_id),
+                                df$name_riding_fr)
     
     return(df)
   })
@@ -252,9 +252,9 @@ server <- function(input, output, session) {
       mutate(
         # Convert probability from 0-1 scale to 0-100 scale if needed
         first_party_percentage = if(max(first_party_percentage, na.rm = TRUE) <= 1) 
-                                   first_party_percentage * 100 
-                                 else 
-                                   first_party_percentage,
+          first_party_percentage * 100 
+        else 
+          first_party_percentage,
         # Add placeholder values for second party to maintain UI compatibility
         second_party = "N/A",
         second_party_percentage = 0,
@@ -265,98 +265,98 @@ server <- function(input, output, session) {
     return(df_processed)
   })
   
-# Create a more efficient reactive for filtered map data
- filtered_map_data <- reactive({
-   # Get processed riding data (contains predictions, IDs)
-   df_ridings <- rv$processed_data() 
-
-   # Create a clean copy of the original map data (contains geometry, IDs, ORIGINAL NAMES)
-   map_data_copy <- map_data %>%
-     mutate(
-       id_riding = as.character(id_riding),
-       name_riding_en_map = as.character(name_riding_en), 
-       name_riding_fr_map = as.character(name_riding_fr)
-     ) %>%
-     select(id_riding, name_riding_en_map, name_riding_fr_map, geometry) 
-
-   # Select only prediction-related columns and the ID from df_ridings
-   df_ridings_subset <- df_ridings %>%
-     select(
-       riding, party, first_party_percentage, 
-       second_party, second_party_percentage, closeness 
-     ) %>%
-     mutate(riding = as.character(riding)) 
-
-   # Join map data (with definitive names) to the prediction subset
-   map_filtered <- map_data_copy %>%
-     left_join(df_ridings_subset, by = c("id_riding" = "riding"))
-
-   # Handle NAs and create fallbacks using definitive names
-   map_filtered <- map_filtered %>%
-     mutate(
-       party = ifelse(is.na(party), "Unknown", party),
-       first_party_percentage = ifelse(is.na(first_party_percentage), 50, first_party_percentage),
-       name_riding_en_map = ifelse(is.na(name_riding_en_map) | name_riding_en_map == "", paste0("Riding ", id_riding), name_riding_en_map),
-       name_riding_fr_map = ifelse(is.na(name_riding_fr_map) | name_riding_fr_map == "", paste0("Circonscription ", id_riding), name_riding_fr_map)
-     )
-
-   # !!! PRE-CALCULATE NAME BASED ON LANGUAGE !!!
-   current_language <- rv$lang() # Get current language once
-   map_filtered <- map_filtered %>%
-       mutate(
-           current_display_name = if (current_language == "fr") name_riding_fr_map else name_riding_en_map
-       )
-   # !!! END PRE-CALCULATION !!!
-
-   # Add other display columns (alpha, categories, tooltip)
-   map_filtered <- map_filtered %>%
-     mutate(
-       alpha_category = case_when( # ... (alpha logic) ...
-         first_party_percentage <= 52 ~ 0.35,
-         first_party_percentage > 52 & first_party_percentage <= 58 ~ 0.5,
-         first_party_percentage > 58 & first_party_percentage <= 70 ~ 0.7,
-         first_party_percentage > 70 & first_party_percentage <= 85 ~ 0.85,
-         first_party_percentage > 85 ~ 1.0,
-         TRUE ~ 0.6
-       ),
-       battlefield_intensity = pmin(100, pmax(0, 100 - first_party_percentage)),
-       closeness_category = case_when( # ... (closeness logic) ...
-         first_party_percentage <= 52 ~ ifelse(rv$lang() == "fr", "Trop serré pour prédire", "Too close to call"),
-         first_party_percentage > 52 & first_party_percentage <= 58 ~ ifelse(rv$lang() == "fr", "Course serrée", "Toss up"),
-         first_party_percentage > 58 & first_party_percentage <= 70 ~ ifelse(rv$lang() == "fr", "Avance modérée", "Competitive"),
-         first_party_percentage > 70 & first_party_percentage <= 85 ~ ifelse(rv$lang() == "fr", "Avance confortable", "Likely win"),
-         first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
-         TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
-       ),
-       
-       # Create tooltip text using the PRE-CALCULATED name
-       tooltip_text = paste0(
-         "<strong>", current_display_name, "</strong><br>", # Use pre-calculated name
-         "<span style='font-size: 9px; color: #777;'>ID: ", id_riding, "</span><br>",
-         ifelse(rv$lang() == "fr", "Parti en tête: ", "Leading party: "),
-         "<span style='color:", ifelse(party %in% names(party_colors), party_colors[party], "#777777"), ";'>", 
-         party, " (", round(first_party_percentage, 1), "%)</span><br>",
-         ifelse(rv$lang() == "fr", "Certitude: ", "Certainty: "), 
-         closeness_category
-       )
-       # REMOVE the old 'display_name' calculation if it existed here
-     )
-
-   # Filter by party (rest of the function remains the same)
-   # ... (filtering logic) ...
+  # Create a more efficient reactive for filtered map data
+  filtered_map_data <- reactive({
+    # Get processed riding data (contains predictions, IDs)
+    df_ridings <- rv$processed_data() 
+    
+    # Create a clean copy of the original map data (contains geometry, IDs, ORIGINAL NAMES)
+    map_data_copy <- map_data %>%
+      mutate(
+        id_riding = as.character(id_riding),
+        name_riding_en_map = as.character(name_riding_en), 
+        name_riding_fr_map = as.character(name_riding_fr)
+      ) %>%
+      select(id_riding, name_riding_en_map, name_riding_fr_map, geometry) 
+    
+    # Select only prediction-related columns and the ID from df_ridings
+    df_ridings_subset <- df_ridings %>%
+      select(
+        riding, party, first_party_percentage, 
+        second_party, second_party_percentage, closeness 
+      ) %>%
+      mutate(riding = as.character(riding)) 
+    
+    # Join map data (with definitive names) to the prediction subset
+    map_filtered <- map_data_copy %>%
+      left_join(df_ridings_subset, by = c("id_riding" = "riding"))
+    
+    # Handle NAs and create fallbacks using definitive names
+    map_filtered <- map_filtered %>%
+      mutate(
+        party = ifelse(is.na(party), "Unknown", party),
+        first_party_percentage = ifelse(is.na(first_party_percentage), 50, first_party_percentage),
+        name_riding_en_map = ifelse(is.na(name_riding_en_map) | name_riding_en_map == "", paste0("Riding ", id_riding), name_riding_en_map),
+        name_riding_fr_map = ifelse(is.na(name_riding_fr_map) | name_riding_fr_map == "", paste0("Circonscription ", id_riding), name_riding_fr_map)
+      )
+    
+    # !!! PRE-CALCULATE NAME BASED ON LANGUAGE !!!
+    current_language <- rv$lang() # Get current language once
+    map_filtered <- map_filtered %>%
+      mutate(
+        current_display_name = if (current_language == "fr") name_riding_fr_map else name_riding_en_map
+      )
+    # !!! END PRE-CALCULATION !!!
+    
+    # Add other display columns (alpha, categories, tooltip)
+    map_filtered <- map_filtered %>%
+      mutate(
+        alpha_category = case_when( # ... (alpha logic) ...
+          first_party_percentage <= 52 ~ 0.35,
+          first_party_percentage > 52 & first_party_percentage <= 58 ~ 0.5,
+          first_party_percentage > 58 & first_party_percentage <= 70 ~ 0.7,
+          first_party_percentage > 70 & first_party_percentage <= 85 ~ 0.85,
+          first_party_percentage > 85 ~ 1.0,
+          TRUE ~ 0.6
+        ),
+        battlefield_intensity = pmin(100, pmax(0, 100 - first_party_percentage)),
+        closeness_category = case_when( # ... (closeness logic) ...
+          first_party_percentage <= 52 ~ ifelse(rv$lang() == "fr", "Trop serré pour prédire", "Too close to call"),
+          first_party_percentage > 52 & first_party_percentage <= 58 ~ ifelse(rv$lang() == "fr", "Course serrée", "Toss up"),
+          first_party_percentage > 58 & first_party_percentage <= 70 ~ ifelse(rv$lang() == "fr", "Avance modérée", "Competitive"),
+          first_party_percentage > 70 & first_party_percentage <= 85 ~ ifelse(rv$lang() == "fr", "Avance confortable", "Likely win"),
+          first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
+          TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
+        ),
+        
+        # Create tooltip text using the PRE-CALCULATED name
+        tooltip_text = paste0(
+          "<strong>", current_display_name, "</strong><br>", # Use pre-calculated name
+          "<span style='font-size: 9px; color: #777;'>ID: ", id_riding, "</span><br>",
+          ifelse(rv$lang() == "fr", "Parti en tête: ", "Leading party: "),
+          "<span style='color:", ifelse(party %in% names(party_colors), party_colors[party], "#777777"), ";'>", 
+          party, " (", round(first_party_percentage, 1), "%)</span><br>",
+          ifelse(rv$lang() == "fr", "Certitude: ", "Certainty: "), 
+          closeness_category
+        )
+        # REMOVE the old 'display_name' calculation if it existed here
+      )
+    
+    # Filter by party (rest of the function remains the same)
+    # ... (filtering logic) ...
     if (input$partyPrediction == t("all_parties")) {
-     return(map_filtered)
-   } else if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
-     return(map_filtered)
-   } else if (input$partyPrediction %in% partis_politiques) {
-     return(map_filtered %>% 
-              mutate(selected_party = party == input$partyPrediction,
-                     display_party = ifelse(selected_party, party, "other")))
-   } else {
-     return(map_filtered)
-   }
- })  
-
+      return(map_filtered)
+    } else if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
+      return(map_filtered)
+    } else if (input$partyPrediction %in% partis_politiques) {
+      return(map_filtered %>% 
+               mutate(selected_party = party == input$partyPrediction,
+                      display_party = ifelse(selected_party, party, "other")))
+    } else {
+      return(map_filtered)
+    }
+  })  
+  
   get_city_data <- function(city_code) {
     # Make sure to properly isolate and capture dependencies
     filtered_data <- isolate(filtered_map_data())
@@ -447,7 +447,7 @@ server <- function(input, output, session) {
       )
     
     # Convertir en girafe pour interactivité
-    girafe(ggobj = p, width_svg = 8, height_svg = 6, options = list(
+    girafe(ggobj = p, width_svg = 42, height_svg = 6, options = list(
       opts_tooltip(
         opacity = 0.9,
         css = "background-color: white; color: #333333; padding: 10px; border-radius: 5px; border: 1px solid #cccccc; font-family: 'Times New Roman', Times, serif;"
@@ -516,8 +516,8 @@ server <- function(input, output, session) {
         
         p <- ggplot() +
           geom_sf_interactive(data = plot_data, 
-                  aes(fill = display_party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
-                  color = "#777777", linewidth = 0.25) +
+                              aes(fill = display_party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                              color = "#777777", linewidth = 0.25) +
           scale_fill_manual(
             values = party_specific_colors,
             name = NULL,
@@ -528,8 +528,8 @@ server <- function(input, output, session) {
         # Standard party colors map (all parties)
         p <- ggplot() +
           geom_sf_interactive(data = plot_data, 
-                  aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
-                  color = "#777777", linewidth = 0.25) +
+                              aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                              color = "#777777", linewidth = 0.25) +
           scale_fill_manual(
             values = party_colors,
             name = NULL,
@@ -636,8 +636,8 @@ server <- function(input, output, session) {
                 
                 p <- ggplot() +
                   geom_sf_interactive(data = city_data, 
-                          aes(fill = display_party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
-                          color = "#333333", linewidth = 0.3) +
+                                      aes(fill = display_party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                                      color = "#333333", linewidth = 0.3) +
                   scale_fill_manual(
                     values = party_specific_colors,
                     na.value = "#777777"
@@ -647,8 +647,8 @@ server <- function(input, output, session) {
                 # Standard party map for cities
                 p <- ggplot() +
                   geom_sf_interactive(data = city_data, 
-                          aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
-                          color = "#333333", linewidth = 0.3) +
+                                      aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                                      color = "#333333", linewidth = 0.3) +
                   scale_fill_manual(
                     values = party_colors,
                     na.value = "#777777"
@@ -715,204 +715,204 @@ server <- function(input, output, session) {
   output$kitchenerMap <- renderCityMap("kitchener_waterloo", "Kitchener-Waterloo")
   output$londonMap <- renderCityMap("london", "London")
   
-
-# Create a reactive for table data to avoid recalculation
- table_data <- reactive({
-   # Get processed data - Debug output showed this HAS correct names & IDs
-   df_ridings <- rv$processed_data() 
-     
-   # Apply party filter
-   # ... (filtering logic remains same) ...
-   if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
-     df_ridings <- df_ridings %>% arrange(first_party_percentage)
-   } else if (input$partyPrediction %in% partis_politiques) {
-     df_ridings <- df_ridings %>% 
-       filter(party == input$partyPrediction)
-   }
-
-   # !!! PRE-CALCULATE NAME BASED ON LANGUAGE !!!
-   current_language <- rv$lang() # Get current language once
-   df_ridings_named <- df_ridings %>%
-     mutate(
-       # Ensure source names are character and handle NAs
-       name_riding_en = as.character(name_riding_en),
-       name_riding_fr = as.character(name_riding_fr),
-       name_riding_en = ifelse(is.na(name_riding_en) | name_riding_en == "", paste0("Riding ", riding), name_riding_en),
-       name_riding_fr = ifelse(is.na(name_riding_fr) | name_riding_fr == "", paste0("Circonscription ", riding), name_riding_fr),
-       # Create the single name column based on current language
-       riding_name = if (current_language == "fr") name_riding_fr else name_riding_en
-     )
-   # !!! END PRE-CALCULATION !!!
-
-   # Format data for display using the pre-calculated 'riding_name'
-   df_display <- df_ridings_named %>% 
-     mutate(
-       # Calculate closeness category
-       closeness_category = case_when( # ... (closeness logic) ...
-         first_party_percentage <= 52 ~ ifelse(rv$lang() == "fr", "Trop serré pour prédire", "Too close to call"),
-         first_party_percentage > 52 & first_party_percentage <= 58 ~ ifelse(rv$lang() == "fr", "Course serrée", "Toss up"),
-         first_party_percentage > 58 & first_party_percentage <= 70 ~ ifelse(rv$lang() == "fr", "Avance modérée", "Competitive"),
-         first_party_percentage > 70 & first_party_percentage <= 85 ~ ifelse(rv$lang() == "fr", "Avance confortable", "Likely win"),
-         first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
-         TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
-       ),
-       # Store original percentage for sorting
-       percentage_value = first_party_percentage
-     ) %>%
-     # Select and rename columns for the final table output
-     # Note: We already created 'riding_name' correctly above
-     select(
-       if (rv$lang() == "fr") {
-         # Use the pre-calculated riding_name
-         c("Circonscription" = "riding_name", "Parti en tête" = "party", "Certitude" = "closeness_category", "Pourcentage" = "percentage_value") 
-       } else {
-         # Use the pre-calculated riding_name
-         c("Riding" = "riding_name", "Leading party" = "party", "Certainty" = "closeness_category", "Percentage" = "percentage_value")
-       }
-     )
-     
-   return(df_display)
- }) # Render data table
+  
+  # Create a reactive for table data to avoid recalculation
+  table_data <- reactive({
+    # Get processed data - Debug output showed this HAS correct names & IDs
+    df_ridings <- rv$processed_data() 
+    
+    # Apply party filter
+    # ... (filtering logic remains same) ...
+    if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
+      df_ridings <- df_ridings %>% arrange(first_party_percentage)
+    } else if (input$partyPrediction %in% partis_politiques) {
+      df_ridings <- df_ridings %>% 
+        filter(party == input$partyPrediction)
+    }
+    
+    # !!! PRE-CALCULATE NAME BASED ON LANGUAGE !!!
+    current_language <- rv$lang() # Get current language once
+    df_ridings_named <- df_ridings %>%
+      mutate(
+        # Ensure source names are character and handle NAs
+        name_riding_en = as.character(name_riding_en),
+        name_riding_fr = as.character(name_riding_fr),
+        name_riding_en = ifelse(is.na(name_riding_en) | name_riding_en == "", paste0("Riding ", riding), name_riding_en),
+        name_riding_fr = ifelse(is.na(name_riding_fr) | name_riding_fr == "", paste0("Circonscription ", riding), name_riding_fr),
+        # Create the single name column based on current language
+        riding_name = if (current_language == "fr") name_riding_fr else name_riding_en
+      )
+    # !!! END PRE-CALCULATION !!!
+    
+    # Format data for display using the pre-calculated 'riding_name'
+    df_display <- df_ridings_named %>% 
+      mutate(
+        # Calculate closeness category
+        closeness_category = case_when( # ... (closeness logic) ...
+          first_party_percentage <= 52 ~ ifelse(rv$lang() == "fr", "Trop serré pour prédire", "Too close to call"),
+          first_party_percentage > 52 & first_party_percentage <= 58 ~ ifelse(rv$lang() == "fr", "Course serrée", "Toss up"),
+          first_party_percentage > 58 & first_party_percentage <= 70 ~ ifelse(rv$lang() == "fr", "Avance modérée", "Competitive"),
+          first_party_percentage > 70 & first_party_percentage <= 85 ~ ifelse(rv$lang() == "fr", "Avance confortable", "Likely win"),
+          first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
+          TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
+        ),
+        # Store original percentage for sorting
+        percentage_value = first_party_percentage
+      ) %>%
+      # Select and rename columns for the final table output
+      # Note: We already created 'riding_name' correctly above
+      select(
+        if (rv$lang() == "fr") {
+          # Use the pre-calculated riding_name
+          c("Circonscription" = "riding_name", "Parti en tête" = "party", "Certitude" = "closeness_category", "Pourcentage" = "percentage_value") 
+        } else {
+          # Use the pre-calculated riding_name
+          c("Riding" = "riding_name", "Leading party" = "party", "Certainty" = "closeness_category", "Percentage" = "percentage_value")
+        }
+      )
+    
+    return(df_display)
+  }) # Render data table
   output$dataTable <- renderDataTable({
-   # Use the reactive table data
-   display_data <- table_data()
-   
-   # Only create the datatable when we have data
-   req(nrow(display_data) > 0)
-   
-   # Extract column names based on language
-   status_col <- if(rv$lang() == "fr") "Certitude" else "Certainty"
-   percentage_col <- if(rv$lang() == "fr") "Pourcentage" else "Percentage"
-   party_col <- if(rv$lang() == "fr") "Parti en tête" else "Leading party"
-   
-   # Not using color styles for certainty column anymore, 
-   # but keeping the categories for reference
-   status_categories <- c(
-     "Too close to call",
-     "Toss up",
-     "Competitive",
-     "Likely win",
-     "Safe win",
-     # French versions
-     "Trop serré pour prédire",
-     "Course serrée",
-     "Avance modérée",
-     "Avance confortable",
-     "Victoire quasi-certaine",
-     # Fallbacks
-     "Unknown",
-     "Inconnu"
-   )
-   
-   # Special color styling for Battlefields mode
-   if (input$partyPrediction == t("battlefields")) {
-     # Get percentages for battlefields coloring
-     numeric_probs <- display_data[[percentage_col]]
-     
-     # Calculate color intensity for each row - inverse of probability
-     battlefield_colors <- sapply(numeric_probs, function(prob) {
-       # Create gradient: yellow (high uncertainty) -> white (medium) -> black (high certainty)
-       # Invert the probability to match the battlefield concept (lower prob = more competitive)
-       intensity <- pmin(100, pmax(0, 100 - prob))
-       
-       if (intensity <= 50) {
-         # Black to White gradient
-         val <- (intensity / 50) * 255
-         r <- val
-         g <- val
-         b <- val
-       } else {
-         # White to Yellow (#FFCC00) gradient
-         r <- 255
-         g <- 255 - ((intensity - 50) / 50) * (255 - 204)
-         b <- 255 - ((intensity - 50) / 50) * 255
-       }
-       
-       return(rgb(r, g, b, maxColorValue = 255))
-     })
-     
-     # Create text colors array (white for dark backgrounds, black for light backgrounds)
-     text_colors <- sapply(numeric_probs, function(prob) {
-       intensity <- pmin(100, pmax(0, 100 - prob))
-       # Use white text if background is dark
-       if (intensity < 30) {
-         return("#FFFFFF") # White text
-       } else {
-         return("#000000") # Black text
-       }
-     })
-   }
-   
-   # Create the data table with its options
-   dt <- datatable(
-     # Keep all columns including percentage for sorting
-     display_data,
-     options = list(
-       pageLength = 10,
-       autoWidth = FALSE,
-       searchHighlight = TRUE,
-       dom = '<"top"f>rt<"bottom"ip>',
-       language = list(
-         search = t("search"),
-         paginate = list(previous = t("previous"), `next` = t("next"))
-       ),
-       scrollX = TRUE,
-       # Define column defs
-       columnDefs = list(
-         list(className = 'dt-center', targets = "_all"),
-         # Make the percentage column hidden but use it for sorting
-         list(
-           targets = 3,  # Percentage column index
-           visible = FALSE
-         ),
-         # Make the status column sortable by the percentage column
-         list(
-           targets = 2,  # Status column index
-           orderData = 3  # Use percentage column for sorting
-         )
-       ),
-       # In battlefield mode, sort by percentage (ascending = most competitive first)
-       order = if(input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") list(list(3, 'asc')) else NULL
-     ),
-     rownames = FALSE,
-     class = 'cell-border stripe compact'
-   ) %>%
-     formatStyle(
-       columns = colnames(display_data)[1:3], # Style only the visible columns
-       backgroundColor = "white",
-       color = "black"
-     )
-   
-   # Apply specific styling based on mode
-   if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
-     # For Battlefields, use plain text for certainty column (no background color)
-     dt <- dt %>% formatStyle(
-       columns = status_col,
-       backgroundColor = "white",
-       color = "#333333"
-     )
-   } else {
-     # Color the party column by party color
-     dt <- dt %>% formatStyle(
-       columns = party_col,
-       backgroundColor = styleEqual(
-         partis_politiques,  # Use the list of political parties directly
-         sapply(party_colors, function(color) {
-           paste0(color, "25")  # Add transparency to the color
-         })
-       )
-     )
-     
-     # Plain text for certainty column (no background color)
-     dt <- dt %>% formatStyle(
-       columns = status_col,
-       backgroundColor = "white",
-       color = "#333333"
-     )
-   }
-   
-   return(dt)
- })
+    # Use the reactive table data
+    display_data <- table_data()
+    
+    # Only create the datatable when we have data
+    req(nrow(display_data) > 0)
+    
+    # Extract column names based on language
+    status_col <- if(rv$lang() == "fr") "Certitude" else "Certainty"
+    percentage_col <- if(rv$lang() == "fr") "Pourcentage" else "Percentage"
+    party_col <- if(rv$lang() == "fr") "Parti en tête" else "Leading party"
+    
+    # Not using color styles for certainty column anymore, 
+    # but keeping the categories for reference
+    status_categories <- c(
+      "Too close to call",
+      "Toss up",
+      "Competitive",
+      "Likely win",
+      "Safe win",
+      # French versions
+      "Trop serré pour prédire",
+      "Course serrée",
+      "Avance modérée",
+      "Avance confortable",
+      "Victoire quasi-certaine",
+      # Fallbacks
+      "Unknown",
+      "Inconnu"
+    )
+    
+    # Special color styling for Battlefields mode
+    if (input$partyPrediction == t("battlefields")) {
+      # Get percentages for battlefields coloring
+      numeric_probs <- display_data[[percentage_col]]
+      
+      # Calculate color intensity for each row - inverse of probability
+      battlefield_colors <- sapply(numeric_probs, function(prob) {
+        # Create gradient: yellow (high uncertainty) -> white (medium) -> black (high certainty)
+        # Invert the probability to match the battlefield concept (lower prob = more competitive)
+        intensity <- pmin(100, pmax(0, 100 - prob))
+        
+        if (intensity <= 50) {
+          # Black to White gradient
+          val <- (intensity / 50) * 255
+          r <- val
+          g <- val
+          b <- val
+        } else {
+          # White to Yellow (#FFCC00) gradient
+          r <- 255
+          g <- 255 - ((intensity - 50) / 50) * (255 - 204)
+          b <- 255 - ((intensity - 50) / 50) * 255
+        }
+        
+        return(rgb(r, g, b, maxColorValue = 255))
+      })
+      
+      # Create text colors array (white for dark backgrounds, black for light backgrounds)
+      text_colors <- sapply(numeric_probs, function(prob) {
+        intensity <- pmin(100, pmax(0, 100 - prob))
+        # Use white text if background is dark
+        if (intensity < 30) {
+          return("#FFFFFF") # White text
+        } else {
+          return("#000000") # Black text
+        }
+      })
+    }
+    
+    # Create the data table with its options
+    dt <- datatable(
+      # Keep all columns including percentage for sorting
+      display_data,
+      options = list(
+        pageLength = 10,
+        autoWidth = FALSE,
+        searchHighlight = TRUE,
+        dom = '<"top"f>rt<"bottom"ip>',
+        language = list(
+          search = t("search"),
+          paginate = list(previous = t("previous"), `next` = t("next"))
+        ),
+        scrollX = TRUE,
+        # Define column defs
+        columnDefs = list(
+          list(className = 'dt-center', targets = "_all"),
+          # Make the percentage column hidden but use it for sorting
+          list(
+            targets = 3,  # Percentage column index
+            visible = FALSE
+          ),
+          # Make the status column sortable by the percentage column
+          list(
+            targets = 2,  # Status column index
+            orderData = 3  # Use percentage column for sorting
+          )
+        ),
+        # In battlefield mode, sort by percentage (ascending = most competitive first)
+        order = if(input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") list(list(3, 'asc')) else NULL
+      ),
+      rownames = FALSE,
+      class = 'cell-border stripe compact'
+    ) %>%
+      formatStyle(
+        columns = colnames(display_data)[1:3], # Style only the visible columns
+        backgroundColor = "white",
+        color = "black"
+      )
+    
+    # Apply specific styling based on mode
+    if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
+      # For Battlefields, use plain text for certainty column (no background color)
+      dt <- dt %>% formatStyle(
+        columns = status_col,
+        backgroundColor = "white",
+        color = "#333333"
+      )
+    } else {
+      # Color the party column by party color
+      dt <- dt %>% formatStyle(
+        columns = party_col,
+        backgroundColor = styleEqual(
+          partis_politiques,  # Use the list of political parties directly
+          sapply(party_colors, function(color) {
+            paste0(color, "25")  # Add transparency to the color
+          })
+        )
+      )
+      
+      # Plain text for certainty column (no background color)
+      dt <- dt %>% formatStyle(
+        columns = status_col,
+        backgroundColor = "white",
+        color = "#333333"
+      )
+    }
+    
+    return(dt)
+  })
   
   # Clear cache when major inputs change
   observeEvent(list(input$partyPrediction, rv$lang()), {

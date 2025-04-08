@@ -609,7 +609,7 @@ ui <- fluidPage(
       font-size: 25px;
       color: #666666;
       margin-top: 10px;
-      text-align: center;
+      text-align: left;
       font-style: italic;
       }
       
@@ -761,14 +761,14 @@ ui <- fluidPage(
           div(style = "display: flex; flex-direction: column; gap: 8px;",
               # French button
               actionButton("setLangFR", 
-                          label = "Français",
-                          icon = icon("flag"),
-                          style = "width: 100%; padding: 5px 10px; border-radius: 4px; font-size: 14px; background-color: #6c757d; color: white; border: none;"),
+                           label = "Français",
+                           icon = icon("flag"),
+                           style = "width: 100%; padding: 5px 10px; border-radius: 4px; font-size: 14px; background-color: #6c757d; color: white; border: none;"),
               # English button
               actionButton("setLangEN", 
-                          label = "English",
-                          icon = icon("flag"),
-                          style = "width: 100%; padding: 5px 10px; border-radius: 4px; font-size: 14px; background-color: white; color: #6c757d; border: 1px solid #6c757d;")
+                           label = "English",
+                           icon = icon("flag"),
+                           style = "width: 100%; padding: 5px 10px; border-radius: 4px; font-size: 14px; background-color: white; color: #6c757d; border: 1px solid #6c757d;")
           )
       )
     ),
