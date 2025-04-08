@@ -1000,10 +1000,13 @@ server <- function(input, output, session) {
       count <- rv$party_seats[party]
       label <- ifelse(rv$lang() == "fr", "sièges", "seats")
       
-      # Create HTML for this party row
+      # Create HTML for this party row - now including the party acronym
       HTML(paste0(
         "<div style='display: flex; justify-content: space-between; align-items: center; margin: 8px 0;'>",
-        "<div><img src='", img_path, "' style='width: 25px; height: auto;' alt='", party, "'></div>",
+        "<div style='display: flex; align-items: center;'>",
+        "<img src='", img_path, "' style='width: 25px; height: auto;' alt='", party, "'>",
+        "<span style='margin-left: 5px; font-size: 12px; color: #777777;'>", party, "</span>",
+        "</div>",
         "<span>", count, " ", label, "</span>",
         "</div>"
       ))
