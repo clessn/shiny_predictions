@@ -15,7 +15,7 @@ library(tidyr)
 library(ggiraph) # Pour les fonctionnalités hover
 
 # Load map data
-map_data <- readRDS("data/map_hybrid.rds")
+map_data <- readRDS("data/map_data1.rds")
 
 # Check if map_data is properly loaded or if it needs fixing
 if (is.character(map_data$id_riding) && length(map_data$id_riding) == 1 && grepl("^c\\(", map_data$id_riding[1])) {
