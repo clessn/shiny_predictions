@@ -1,8 +1,17 @@
 # Script pour créer un jeu de données hybride combinant les géométries
 # de spatial_canada_2022_electoral_ridings_aligned et map_statcan.rds
+# avec simplification des circonscriptions spécifiques
 library(sf)
 library(dplyr)
 library(cartessn)  # Package source
+
+# Définir les circonscriptions spécifiques à simplifier fortement
+ridings_a_simplifier <- c(
+  "60001", # Yukon
+  "61001", # Northwest Territories
+  "62001", # Nunavut
+  "10004"  # Labrador
+)
 
 # Définir le mapping des villes
 city_mapping <- list(
@@ -225,63 +234,80 @@ message("Chargement des données originales...")
 map_data_original <- cartessn::spatial_canada_2022_electoral_ridings_aligned
 map_statcan <- readRDS("data/map_statcan.rds")
 
-# Liste des ridings spécifiques à conserver avec la géométrie originale
+# Liste des ridings à conserver avec la géométrie originale (hors simplification)
 ridings_a_conserver <- c(
-  "60001", # Yukon
-  "61001", # Northwest Territories
-  "62001", # Nunavut
-  "10004"  # Labrador
+  unlist(lapply(city_mapping, function(x) x$ridings))
 )
 
 # Extraire tous les ridings des villes
 all_city_ridings <- unique(unlist(lapply(city_mapping, function(x) x$ridings)))
 
-# Combiner avec les ridings à conserver
-ridings_a_conserver_tous <- c(ridings_a_conserver, all_city_ridings)
-
-message(paste("Nombre total de circonscriptions à conserver de l'original:", 
-              length(ridings_a_conserver_tous)))
-
-# 1. Extraction des géométries originales pour les ridings spécifiques
-message("Extraction des géométries pour les ridings spécifiques...")
+# S'assurer que les ID sont en caractères
 map_data_original$id_riding <- as.character(map_data_original$id_riding)
-
-ridings_original <- map_data_original %>%
-  filter(id_riding %in% ridings_a_conserver_tous)
-
-# 2. Extraction des géométries de map_statcan pour les autres ridings
-message("Extraction des géométries de map_statcan pour les autres ridings...")
 map_statcan$id_riding <- as.character(map_statcan$id_riding)
 
-ridings_statcan <- map_statcan %>%
-  filter(!id_riding %in% ridings_a_conserver_tous)
+# NOUVEAU: Simplification des géométries spécifiques
+message("Simplification des géométries spécifiques...")
+# Identifier les circonscriptions à simplifier
+ridings_to_simplify <- map_data_original %>%
+  filter(id_riding %in% ridings_a_simplifier)
 
-# Vérifier que les deux jeux de données ont les mêmes colonnes
-cols_original <- names(ridings_original)
-cols_statcan <- names(ridings_statcan)
+# Simplifier fortement ces géométries
+simplified_ridings <- ridings_to_simplify %>%
+  st_simplify(dTolerance = 10000)  # Valeur très élevée pour simplification agressive
 
-# Identifier les colonnes communes
-common_cols <- intersect(cols_original, cols_statcan)
+# Mesurer le niveau de simplification
+original_vertices <- sum(sapply(st_geometry(ridings_to_simplify), function(x) nrow(st_coordinates(x))))
+simplified_vertices <- sum(sapply(st_geometry(simplified_ridings), function(x) nrow(st_coordinates(x))))
 
-message("Colonnes communes aux deux jeux de données:")
+message("Statistiques de simplification:")
+message(paste("Nombre de sommets originaux:", original_vertices))
+message(paste("Nombre de sommets après simplification:", simplified_vertices))
+message(paste("Réduction:", round((1 - simplified_vertices/original_vertices) * 100, 1), "%"))
+
+# 1. Extraction des géométries originales pour les ridings des villes
+message("Extraction des géométries pour les ridings des villes...")
+city_ridings_original <- map_data_original %>%
+  filter(id_riding %in% all_city_ridings)
+
+# 2. Extraction des géométries simplifiées
+message("Extraction des géométries simplifiées...")
+simplified_set <- simplified_ridings
+
+# 3. Extraction des géométries de map_statcan pour les autres ridings
+message("Extraction des géométries de map_statcan pour les autres ridings...")
+remaining_ridings <- map_statcan %>%
+  filter(!id_riding %in% c(all_city_ridings, ridings_a_simplifier))
+
+# Vérifier que les différents jeux de données ont les mêmes colonnes
+common_cols <- Reduce(intersect, list(
+  names(city_ridings_original),
+  names(simplified_set),
+  names(remaining_ridings)
+))
+
+message("Colonnes communes aux jeux de données:")
 message(paste(common_cols, collapse = ", "))
 
 # Utiliser seulement les colonnes communes pour le rbind
-ridings_original <- ridings_original %>% select(all_of(common_cols))
-ridings_statcan <- ridings_statcan %>% select(all_of(common_cols))
+city_ridings_original <- city_ridings_original %>% select(all_of(common_cols))
+simplified_set <- simplified_set %>% select(all_of(common_cols))
+remaining_ridings <- remaining_ridings %>% select(all_of(common_cols))
 
-# S'assurer que les deux jeux de données ont le même CRS
-target_crs <- st_crs(ridings_original)
-ridings_statcan <- st_transform(ridings_statcan, target_crs)
+# S'assurer que tous les jeux de données ont le même CRS
+target_crs <- st_crs(city_ridings_original)
+remaining_ridings <- st_transform(remaining_ridings, target_crs)
+simplified_set <- st_transform(simplified_set, target_crs)
 
-# 3. Combiner les deux jeux de données
-message("Combinaison des deux jeux de données...")
-map_hybrid <- rbind(ridings_original, ridings_statcan)
+# 4. Combiner les trois jeux de données
+message("Combinaison des jeux de données...")
+map_hybrid <- rbind(city_ridings_original, simplified_set, remaining_ridings)
 
 # Vérification
 message(paste("Nombre de ridings dans le jeu hybride:", nrow(map_hybrid)))
-message(paste("Nombre de ridings originaux conservés:", nrow(ridings_original)))
-message(paste("Nombre de ridings de StatCan utilisés:", nrow(ridings_statcan)))
+message(paste("Nombre de ridings des villes conservés:", nrow(city_ridings_original)))
+message(paste("Nombre de ridings simplifiés:", nrow(simplified_set)))
+message(paste("Nombre de ridings de StatCan utilisés:", nrow(remaining_ridings)))
 
 # Mesurer les tailles
 original_size <- object.size(map_data_original)
