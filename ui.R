@@ -789,9 +789,9 @@ ui <- fluidPage(
       
       # Canada map at the top with container and section header
       div(class = "map-container",
-          style = "margin-bottom: 20px; background: white; padding: 15px; border: 1px solid #e6e6e6; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);",
+          style = "margin-bottom: 10px; background: white; padding: 8px; border: 1px solid #e6e6e6; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);",
           withSpinner(
-            girafeOutput("mapPlot", height = "600px"),
+            girafeOutput("mapPlot", height = "770px"),
             color = "#555555", type = 8, size = 0.8
           )
       ),
