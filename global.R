@@ -300,6 +300,34 @@ city_mapping <- list(
   )
 )
 
+
+# Définir les acronymes français des partis politiques
+partis_politiques_fr <- c("PLC", "PCC", "NPD", "BQ", "PVC")
+
+# Et modifiez la définition de party_names pour inclure les acronymes
+party_names <- list(
+  "en" = c(
+    "LPC" = "Liberal", 
+    "CPC" = "Conservative", 
+    "NDP" = "New Democratic",
+    "BQ" = "Bloc Québécois",
+    "GPC" = "Green"
+  ),
+  "fr" = c(
+    "PLC" = "Libéral", 
+    "PCC" = "Conservateur", 
+    "NPD" = "Nouveau Démocratique",
+    "BQ" = "Bloc Québécois",
+    "PVC" = "Parti Vert"
+  )
+)
+
+# Correspondance entre les acronymes anglais et français
+party_acronym_mapping <- list(
+  "en_to_fr" = c("LPC" = "PLC", "CPC" = "PCC", "NDP" = "NPD", "GPC" = "PVC", "BQ" = "BQ"),
+  "fr_to_en" = c("PLC" = "LPC", "PCC" = "CPC", "NPD" = "NDP", "PVC" = "GPC", "BQ" = "BQ")
+)
+
 # Define party colors for consistent visualization
 party_colors <- c(
   "LPC" = "#D91920",  # Liberal - Red

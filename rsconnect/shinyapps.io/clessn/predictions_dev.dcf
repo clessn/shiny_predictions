@@ -5,6 +5,6 @@ account: clessn
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 14475368
-bundleId: 10087627
+bundleId: 10104138
 url: https://clessn.shinyapps.io/predictions_dev/
 version: 1

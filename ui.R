@@ -676,41 +676,8 @@ ui <- fluidPage(
             
             # Légende minimaliste avec gradients pour chaque parti
             div(class = "party-gradients-container",
-                lapply(c("LPC", "CPC", "NDP", "BQ", "GPC"), function(party) {
-                  div(class = "party-gradient-row",
-                      span(class = "party-name", party),
-                      div(class = "party-gradient-bar", 
-                          style = paste0("background: linear-gradient(to right, ", 
-                                         ifelse(party == "LPC", "#d71920", 
-                                                ifelse(party == "CPC", "#0e2c68", 
-                                                       ifelse(party == "NDP", "#f58220", 
-                                                              ifelse(party == "GPC", "#39D353",
-                                                                     "#29b2e6"
-                                                              )
-                                                       )
-                                                )
-                                         ), "20 0%, ", 
-                                         ifelse(party == "LPC", "#d71920", 
-                                                ifelse(party == "CPC", "#0e2c68", 
-                                                       ifelse(party == "NDP", "#f58220", 
-                                                              ifelse(party == "GPC", "#39D353",
-                                                                     "#29b2e6"
-                                                              )
-                                                       )
-                                                )
-                                         ), "60 50%, ", 
-                                         ifelse(party == "LPC", "#d71920", 
-                                                ifelse(party == "CPC", "#0e2c68", 
-                                                       ifelse(party == "NDP", "#f58220", 
-                                                              ifelse(party == "GPC", "#39D353",
-                                                                     "#29b2e6"
-                                                              )
-                                                       )
-                                                )
-                                         ), " 100%);"))
-                  )
-                })
-            ),
+    uiOutput("partyGradients")
+),
             
             # Seats counter legend
             div(class = "seat-counter-container", style = "margin-top: 20px;",
