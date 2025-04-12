@@ -11,14 +11,28 @@ library(ggiraph)
 library(scales)
 library(lubridate)
 
+# 1. Améliorez la fonction convert_party_acronym au début du fichier:
 convert_party_acronym <- function(party_code) {
+  # Tables de conversion
   french_to_english <- c("PLC" = "LPC", "PCC" = "CPC", "NPD" = "NDP", "PVC" = "GPC", "BQ" = "BQ")
+  english_to_french <- c("LPC" = "PLC", "CPC" = "PCC", "NDP" = "NPD", "GPC" = "PVC", "BQ" = "BQ")
   
+  # Vérifier dans quelle table se trouve le code et convertir
   if (party_code %in% names(french_to_english)) {
     return(french_to_english[party_code])
+  } else if (party_code %in% names(english_to_french)) {
+    # Si on veut aussi convertir de l'anglais vers le français
+    # return(english_to_french[party_code])
+    return(party_code)  # Garder le code anglais tel quel
   } else {
-    return(party_code)
+    return(party_code)  # Retourner inchangé si non reconnu
   }
+}
+
+# 2. Ajouter une nouvelle fonction pour vérifier si un acronyme est valide (anglais ou français)
+is_valid_party_acronym <- function(party_code) {
+  valid_acronyms <- c("LPC", "CPC", "NDP", "BQ", "GPC", "PLC", "PCC", "NPD", "PVC")
+  return(party_code %in% valid_acronyms)
 }
 
 server <- function(input, output, session) {
@@ -423,27 +437,30 @@ output$partyGradients <- renderUI({
       )
     
    # Filter by party - avec vérification supplémentaire pour éviter les erreurs
-  if (!is.null(input$partyPrediction)) {
+   if (!is.null(input$partyPrediction)) {
     party_prediction <- input$partyPrediction
     
     if (party_prediction == t("all_parties")) {
       return(map_filtered)
     } else if (party_prediction == t("battlefields") || party_prediction == "Battlefields") {
       return(map_filtered)
-    } else if (party_prediction %in% partis_politiques || 
-               party_prediction %in% c("PLC", "PCC", "NPD", "PVC")) {
+    } else if (is_valid_party_acronym(party_prediction)) {
+      # Convertir l'acronyme du parti si nécessaire (français vers anglais)
       party_code <- convert_party_acronym(party_prediction)
+      
+      # Appliquer le filtre avec l'acronyme anglais
       return(map_filtered %>% 
              mutate(selected_party = party == party_code,
                     display_party = ifelse(selected_party, party, "other")))
     } else {
+      # Si ce n'est pas un parti reconnu, retourner les données non filtrées
       return(map_filtered)
     }
   } else {
     # Par défaut si input$partyPrediction n'est pas disponible
     return(map_filtered)
   }
-  })  
+})
   
   get_city_data <- function(city_code) {
     # Make sure to properly isolate and capture dependencies
@@ -601,33 +618,36 @@ output$partyGradients <- renderUI({
       rv$total_seats <- sum(party_seats)
       
       # Check if it's a party-specific view
-      if (input$partyPrediction %in% partis_politiques) {
-        # For party-specific maps, show selected party in color and others gray
-        party_specific_colors <- c(party_colors, "other" = "#DDDDDD")
-        
-        p <- ggplot() +
-          geom_sf_interactive(data = plot_data, 
-                              aes(fill = display_party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
-                              color = "#777777", linewidth = 0.25) +
-          scale_fill_manual(
-            values = party_specific_colors,
-            name = NULL,
-            na.value = "#777777"
-          ) +
-          scale_alpha_identity()
-      } else {
-        # Standard party colors map (all parties)
-        p <- ggplot() +
-          geom_sf_interactive(data = plot_data, 
-                              aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
-                              color = "#777777", linewidth = 0.25) +
-          scale_fill_manual(
-            values = party_colors,
-            name = NULL,
-            na.value = "#777777"
-          ) +
-          scale_alpha_identity()
-      }
+     # Vérifier si c'est une vue spécifique à un parti (avec support pour les acronymes français)
+     is_party_view <- is_valid_party_acronym(input$partyPrediction) && "display_party" %in% colnames(plot_data)
+      
+     if (is_party_view) {
+       # For party-specific maps, show selected party in color and others gray
+       party_specific_colors <- c(party_colors, "other" = "#DDDDDD")
+       
+       p <- ggplot() +
+         geom_sf_interactive(data = plot_data, 
+                             aes(fill = display_party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                             color = "#777777", linewidth = 0.25) +
+         scale_fill_manual(
+           values = party_specific_colors,
+           name = NULL,
+           na.value = "#777777"
+         ) +
+         scale_alpha_identity()
+     } else {
+       # Standard party colors map (all parties)
+       p <- ggplot() +
+         geom_sf_interactive(data = plot_data, 
+                             aes(fill = party, alpha = alpha_category, tooltip = tooltip_text, data_id = id_riding),
+                             color = "#777777", linewidth = 0.25) +
+         scale_fill_manual(
+           values = party_colors,
+           name = NULL,
+           na.value = "#777777"
+         ) +
+         scale_alpha_identity()
+     }
     }
     
     # Add common theme elements
@@ -721,8 +741,11 @@ output$partyGradients <- renderUI({
                   limits = c(0, 100)
                 )
             } else {
-              # Check if it's a party-specific view
-              if (input$partyPrediction %in% partis_politiques && "display_party" %in% colnames(city_data)) {
+              # Vérifier si c'est une vue spécifique à un parti en tenant compte des acronymes français
+              party_code <- convert_party_acronym(input$partyPrediction)
+              is_party_view <- is_valid_party_acronym(input$partyPrediction) && "display_party" %in% colnames(city_data)
+              
+              if (is_party_view) {
                 # For party-specific city maps
                 party_specific_colors <- c(party_colors, "other" = "#DDDDDD")
                 
@@ -809,255 +832,238 @@ output$partyGradients <- renderUI({
   
   
   # Create a reactive for table data to avoid recalculation
-    table_data <- reactive({
-      # Utiliser req() pour s'assurer que les dépendances requises sont disponibles
-      req(input$partyPrediction, rv$processed_data())
-      
-      # Get processed data
-      df_ridings <- rv$processed_data() 
-      
-      # Créer une copie pour travailler dessus
-      filtered_df <- df_ridings
-      
-      # Apply party filter avec vérification supplémentaire
-      party_prediction <- input$partyPrediction
-      
-      if (party_prediction == t("battlefields") || party_prediction == "Battlefields") {
-        filtered_df <- filtered_df %>% arrange(first_party_percentage)
-      } else if (party_prediction %in% partis_politiques || 
-                party_prediction %in% c("PLC", "PCC", "NPD", "PVC", "BQ", "GPC")) {
-        filtered_df <- filtered_df %>% 
-          filter(party == party_prediction)
-      }
-        
-      # !!! PRE-CALCULATE NAME BASED ON LANGUAGE !!!
-      current_language <- rv$lang() # Get current language once
-      
-      # AJOUT: Créer une colonne supplémentaire pour conserver l'acronyme anglais pour le mappage des couleurs
-      filtered_df <- filtered_df %>%
-        mutate(party_original = party)
-      
-      # AJOUT: Convertir les acronymes de parti selon la langue actuelle
-      if (current_language == "fr") {
-        # Convertir les acronymes de l'anglais vers le français 
-        filtered_df <- filtered_df %>%
-          mutate(party = case_when(
-            party == "LPC" ~ "PLC",
-            party == "CPC" ~ "PCC",
-            party == "NDP" ~ "NPD",
-            party == "GPC" ~ "PVC",
-            TRUE ~ party  # Garder les autres valeurs inchangées (comme BQ)
-          ))
-      }
-      
-      df_ridings_named <- filtered_df %>%
-        mutate(
-          # Ensure source names are character and handle NAs
-          name_riding_en = as.character(name_riding_en),
-          name_riding_fr = as.character(name_riding_fr),
-          name_riding_en = ifelse(is.na(name_riding_en) | name_riding_en == "", paste0("Riding ", riding), name_riding_en),
-          name_riding_fr = ifelse(is.na(name_riding_fr) | name_riding_fr == "", paste0("Circonscription ", riding), name_riding_fr),
-          # Create the single name column based on current language
-          riding_name = if (current_language == "fr") name_riding_fr else name_riding_en
-        )
-      # !!! END PRE-CALCULATION !!!
-      
-      # Format data for display using the pre-calculated 'riding_name'
-      df_display <- df_ridings_named %>% 
-        mutate(
-          # Calculate closeness category
-          closeness_category = case_when( # ... (closeness logic) ...
-            first_party_percentage <= 52 ~ ifelse(rv$lang() == "fr", "Trop serré pour prédire", "Too close to call"),
-            first_party_percentage > 52 & first_party_percentage <= 58 ~ ifelse(rv$lang() == "fr", "Course serrée", "Toss up"),
-            first_party_percentage > 58 & first_party_percentage <= 70 ~ ifelse(rv$lang() == "fr", "Avance modérée", "Competitive"),
-            first_party_percentage > 70 & first_party_percentage <= 85 ~ ifelse(rv$lang() == "fr", "Avance confortable", "Likely win"),
-            first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
-            TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
-          ),
-          # Store original percentage for sorting
-          percentage_value = first_party_percentage
-        ) %>%
-        # Select and rename columns for the final table output
-        # Note: We already created 'riding_name' correctly above
-        select(
-          if (rv$lang() == "fr") {
-            # Use the pre-calculated riding_name
-            c("Circonscription" = "riding_name", "Parti en tête" = "party", "Certitude" = "closeness_category", "Pourcentage" = "percentage_value", "party_original" = "party_original") 
-          } else {
-            # Use the pre-calculated riding_name
-            c("Riding" = "riding_name", "Leading party" = "party", "Certainty" = "closeness_category", "Percentage" = "percentage_value", "party_original" = "party_original")
-          }
-        )
-      
-      return(df_display)
-    }) # Render data table
-    output$dataTable <- renderDataTable({
-      # S'assurer que les données sont disponibles
-      req(table_data())
-      
-      # Use the reactive table data
-      display_data <- table_data()
-      
-      # Only create the datatable when we have data
-      if (nrow(display_data) == 0) {
-        # Return an empty data table si pas de données
-        return(datatable(
-          data.frame(
-            Message = c("Données en cours de chargement...")
-          ),
-          options = list(
-            dom = 'rt',
-            ordering = FALSE,
-            searching = FALSE,
-            paging = FALSE
-          ),
-          rownames = FALSE,
-          class = 'cell-border stripe compact'
-        ))
-      }
-      
-      # Extract column names based on language
-      status_col <- if(rv$lang() == "fr") "Certitude" else "Certainty"
-      percentage_col <- if(rv$lang() == "fr") "Pourcentage" else "Percentage"
-      party_col <- if(rv$lang() == "fr") "Parti en tête" else "Leading party"
-      
-      # Not using color styles for certainty column anymore, 
-      # but keeping the categories for reference
-      status_categories <- c(
-        "Too close to call",
-        "Toss up",
-        "Competitive",
-        "Likely win",
-        "Safe win",
-        # French versions
-        "Trop serré pour prédire",
-        "Course serrée",
-        "Avance modérée",
-        "Avance confortable",
-        "Victoire quasi-certaine",
-        # Fallbacks
-        "Unknown",
-        "Inconnu"
+  table_data <- reactive({
+    # Utiliser req() pour s'assurer que les dépendances requises sont disponibles
+    req(input$partyPrediction, rv$processed_data())
+    
+    # Get processed data
+    df_ridings <- rv$processed_data() 
+    
+    # Créer une copie pour travailler dessus
+    filtered_df <- df_ridings
+    
+    # Convertir l'acronyme de parti sélectionné dans la barre latérale si nécessaire
+    party_prediction <- input$partyPrediction
+    party_prediction_en <- party_prediction  # Version anglaise pour le filtrage
+    
+    # Si on est en français, convertir les acronymes français vers l'anglais pour le filtrage
+    if (rv$lang() == "fr" && party_prediction %in% c("PLC", "PCC", "NPD", "PVC", "BQ")) {
+      party_prediction_en <- case_when(
+        party_prediction == "PLC" ~ "LPC",
+        party_prediction == "PCC" ~ "CPC",
+        party_prediction == "NPD" ~ "NDP",
+        party_prediction == "PVC" ~ "GPC",
+        TRUE ~ party_prediction  # Garder BQ inchangé
       )
-      
-      # Special color styling for Battlefields mode
-      if (input$partyPrediction == t("battlefields")) {
-        # Get percentages for battlefields coloring
-        numeric_probs <- display_data[[percentage_col]]
-        
-        # Calculate color intensity for each row - inverse of probability
-        battlefield_colors <- sapply(numeric_probs, function(prob) {
-          # Create gradient: yellow (high uncertainty) -> white (medium) -> black (high certainty)
-          # Invert the probability to match the battlefield concept (lower prob = more competitive)
-          intensity <- pmin(100, pmax(0, 100 - prob))
-          
-          if (intensity <= 50) {
-            # Black to White gradient
-            val <- (intensity / 50) * 255
-            r <- val
-            g <- val
-            b <- val
-          } else {
-            # White to Yellow (#FFCC00) gradient
-            r <- 255
-            g <- 255 - ((intensity - 50) / 50) * (255 - 204)
-            b <- 255 - ((intensity - 50) / 50) * 255
-          }
-          
-          return(rgb(r, g, b, maxColorValue = 255))
-        })
-        
-        # Create text colors array (white for dark backgrounds, black for light backgrounds)
-        text_colors <- sapply(numeric_probs, function(prob) {
-          intensity <- pmin(100, pmax(0, 100 - prob))
-          # Use white text if background is dark
-          if (intensity < 30) {
-            return("#FFFFFF") # White text
-          } else {
-            return("#000000") # Black text
-          }
-        })
-      }
-      
-      # Hide the party_original column
-      visible_cols <- seq_len(ncol(display_data) - 1)
-      
-      # Create the data table with its options
-      dt <- datatable(
-        # Keep all columns including percentage for sorting
-        display_data,
+    }
+    
+    # Appliquer le filtre avec la version anglaise des acronymes
+    if (party_prediction == t("battlefields") || party_prediction == "Battlefields") {
+      filtered_df <- filtered_df %>% arrange(first_party_percentage)
+    } else if (party_prediction_en %in% partis_politiques || 
+              party_prediction %in% c("PLC", "PCC", "NPD", "PVC", "BQ", "GPC")) {
+      filtered_df <- filtered_df %>% 
+        filter(party == party_prediction_en)  # Filtrer avec l'acronyme anglais
+    }
+    
+    # !!! PRE-CALCULATE NAME BASED ON LANGUAGE !!!
+    current_language <- rv$lang() # Get current language once
+    
+    # AJOUT: Créer une colonne supplémentaire pour conserver l'acronyme anglais pour le mappage des couleurs
+    filtered_df <- filtered_df %>%
+      mutate(party_original = party)
+    
+    # AJOUT: Convertir les acronymes de parti selon la langue actuelle
+    if (current_language == "fr") {
+      # Convertir les acronymes de l'anglais vers le français 
+      filtered_df <- filtered_df %>%
+        mutate(party = case_when(
+          party == "LPC" ~ "PLC",
+          party == "CPC" ~ "PCC",
+          party == "NDP" ~ "NPD",
+          party == "GPC" ~ "PVC",
+          TRUE ~ party  # Garder les autres valeurs inchangées (comme BQ)
+        ))
+    }
+    
+    df_ridings_named <- filtered_df %>%
+      mutate(
+        # Ensure source names are character and handle NAs
+        name_riding_en = as.character(name_riding_en),
+        name_riding_fr = as.character(name_riding_fr),
+        name_riding_en = ifelse(is.na(name_riding_en) | name_riding_en == "", paste0("Riding ", riding), name_riding_en),
+        name_riding_fr = ifelse(is.na(name_riding_fr) | name_riding_fr == "", paste0("Circonscription ", riding), name_riding_fr),
+        # Create the single name column based on current language
+        riding_name = if (current_language == "fr") name_riding_fr else name_riding_en
+      )
+    # !!! END PRE-CALCULATION !!!
+    
+    # Format data for display using the pre-calculated 'riding_name'
+    df_display <- df_ridings_named %>% 
+      mutate(
+        # Calculate closeness category
+        closeness_category = case_when( # ... (closeness logic) ...
+          first_party_percentage <= 52 ~ ifelse(rv$lang() == "fr", "Trop serré pour prédire", "Too close to call"),
+          first_party_percentage > 52 & first_party_percentage <= 58 ~ ifelse(rv$lang() == "fr", "Course serrée", "Toss up"),
+          first_party_percentage > 58 & first_party_percentage <= 70 ~ ifelse(rv$lang() == "fr", "Avance modérée", "Competitive"),
+          first_party_percentage > 70 & first_party_percentage <= 85 ~ ifelse(rv$lang() == "fr", "Avance confortable", "Likely win"),
+          first_party_percentage > 85 ~ ifelse(rv$lang() == "fr", "Victoire quasi-certaine", "Safe win"),
+          TRUE ~ ifelse(rv$lang() == "fr", "Inconnu", "Unknown")
+        ),
+        # Store original percentage for sorting
+        percentage_value = first_party_percentage
+      ) %>%
+      # Select and rename columns for the final table output
+      # Note: We already created 'riding_name' correctly above
+      select(
+        if (rv$lang() == "fr") {
+          # Use the pre-calculated riding_name
+          c("Circonscription" = "riding_name", "Parti en tête" = "party", "Certitude" = "closeness_category", "Pourcentage" = "percentage_value", "party_original" = "party_original") 
+        } else {
+          # Use the pre-calculated riding_name
+          c("Riding" = "riding_name", "Leading party" = "party", "Certainty" = "closeness_category", "Percentage" = "percentage_value", "party_original" = "party_original")
+        }
+      )
+    
+    return(df_display)
+  }) # Render data table
+  output$dataTable <- renderDataTable({
+    # S'assurer que les données sont disponibles
+    req(table_data())
+    
+    # Use the reactive table data
+    display_data <- table_data()
+    
+    # Only create the datatable when we have data
+    if (nrow(display_data) == 0) {
+      # Return an empty data table si pas de données
+      return(datatable(
+        data.frame(
+          Message = c("Données en cours de chargement...")
+        ),
         options = list(
-          pageLength = 10,
-          autoWidth = FALSE,
-          searchHighlight = TRUE,
-          dom = '<"top"f>rt<"bottom"ip>',
-          language = list(
-            search = t("search"),
-            paginate = list(previous = t("previous"), `next` = t("next"))
-          ),
-          scrollX = TRUE,
-          # Define column defs
-          columnDefs = list(
-            list(className = 'dt-center', targets = "_all"),
-            # Make the percentage column hidden but use it for sorting
-            list(
-              targets = 3,  # Percentage column index
-              visible = FALSE
-            ),
-            # Make the status column sortable by the percentage column
-            list(
-              targets = 2,  # Status column index
-              orderData = 3  # Use percentage column for sorting
-            ),
-            # Hide the party_original column
-            list(
-              targets = 4,  # party_original column index
-              visible = FALSE
-            )
-          ),
-          # In battlefield mode, sort by percentage (ascending = most competitive first)
-          order = if(input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") list(list(3, 'asc')) else NULL
+          dom = 'rt',
+          ordering = FALSE,
+          searching = FALSE,
+          paging = FALSE
         ),
         rownames = FALSE,
         class = 'cell-border stripe compact'
-      ) %>%
-        formatStyle(
-          columns = colnames(display_data)[1:3], # Style only the visible columns
-          backgroundColor = "white",
-          color = "black"
-        )
-      
-      # Apply specific styling based on mode
-      if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
-        # For Battlefields, use plain text for certainty column (no background color)
-        dt <- dt %>% formatStyle(
-          columns = status_col,
-          backgroundColor = "white",
-          color = "#333333"
-        )
-      } else {
-        # Color the party column by party color - UTILISER party_original pour le mappage des couleurs
-        dt <- dt %>% formatStyle(
-          columns = party_col,
-          backgroundColor = styleEqual(
-            partis_politiques,  # Use the list of political parties directly
-            sapply(party_colors, function(color) {
-              paste0(color, "25")  # Add transparency to the color
-            })
+      ))
+    }
+    
+    # Extract column names based on language
+    status_col <- if(rv$lang() == "fr") "Certitude" else "Certainty"
+    percentage_col <- if(rv$lang() == "fr") "Pourcentage" else "Percentage"
+    party_col <- if(rv$lang() == "fr") "Parti en tête" else "Leading party"
+    
+    # Hide the party_original column
+    visible_cols <- seq_len(ncol(display_data) - 1)
+    
+    # Create the data table with its options
+    dt <- datatable(
+      # Keep all columns including percentage for sorting
+      display_data,
+      options = list(
+        pageLength = 10,
+        autoWidth = FALSE,
+        searchHighlight = TRUE,
+        dom = '<"top"f>rt<"bottom"ip>',
+        language = list(
+          search = t("search"),
+          paginate = list(previous = t("previous"), `next` = t("next"))
+        ),
+        scrollX = TRUE,
+        # Define column defs
+        columnDefs = list(
+          list(className = 'dt-center', targets = "_all"),
+          # Make the percentage column hidden but use it for sorting
+          list(
+            targets = 3,  # Percentage column index
+            visible = FALSE
           ),
-          valueColumns = "party_original"  # Utiliser la colonne cachée pour déterminer les couleurs
+          # Make the status column sortable by the percentage column
+          list(
+            targets = 2,  # Status column index
+            orderData = 3  # Use percentage column for sorting
+          ),
+          # Hide the party_original column
+          list(
+            targets = 4,  # party_original column index
+            visible = FALSE
+          )
+        ),
+        # In battlefield mode, sort by percentage (ascending = most competitive first)
+        order = if(input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") list(list(3, 'asc')) else NULL
+      ),
+      rownames = FALSE,
+      class = 'cell-border stripe compact'
+    ) %>%
+      formatStyle(
+        columns = colnames(display_data)[1:3], # Style only the visible columns
+        backgroundColor = "white",
+        color = "black"
+      )
+    
+    # Apply specific styling based on mode
+    if (input$partyPrediction == t("battlefields") || input$partyPrediction == "Battlefields") {
+      # Pour le mode Battlefields, appliquons le même gradient que dans la carte
+      dt <- dt %>% formatStyle(
+        columns = party_col, # Appliquer la couleur à la colonne du parti
+        background = JS(paste0(
+          "function(value, row, index) {",
+          "  const percentage = parseFloat(row[", which(colnames(display_data) == percentage_col)-1, "]);", # -1 car JavaScript indexe à partir de 0
+          "  const intensity = Math.min(100, Math.max(0, 100 - percentage));", # Inverse de la probabilité (comme dans la carte)
+          "  let r, g, b;",
+          "  if (intensity <= 50) {", # De noir à blanc (0-50%)
+          "    const val = (intensity / 50) * 255;",
+          "    r = val; g = val; b = val;",
+          "  } else {", # De blanc à jaune (50-100%)
+          "    r = 255;",
+          "    g = 255 - ((intensity - 50) / 50) * (255 - 204);", # 204 est la composante verte de #FFCC00
+          "    b = 255 - ((intensity - 50) / 50) * 255;", # Diminue jusqu'à 0 pour #FFCC00
+          "  }",
+          "  return 'rgb(' + Math.round(r) + ',' + Math.round(g) + ',' + Math.round(b) + ')';",
+          "}")
+        ),
+        color = JS(paste0(
+          "function(value, row, index) {",
+          "  const percentage = parseFloat(row[", which(colnames(display_data) == percentage_col)-1, "]);",
+          "  const intensity = Math.min(100, Math.max(0, 100 - percentage));",
+          "  return intensity < 30 ? 'white' : 'black';", # Texte blanc sur fond foncé, noir sur fond clair
+          "}")
         )
-        
-        # Plain text for certainty column (no background color)
-        dt <- dt %>% formatStyle(
-          columns = status_col,
-          backgroundColor = "white",
-          color = "#333333"
-        )
-      }
+      )
       
-      return(dt)
-    })
+      # Certitude column sans couleur de fond
+      dt <- dt %>% formatStyle(
+        columns = status_col,
+        backgroundColor = "white",
+        color = "#333333"
+      )
+    } else {
+      # Color the party column by party color - UTILISER party_original pour le mappage des couleurs
+      dt <- dt %>% formatStyle(
+        columns = party_col,
+        backgroundColor = styleEqual(
+          partis_politiques,  # Use the list of political parties directly
+          sapply(party_colors, function(color) {
+            paste0(color, "25")  # Add transparency to the color
+          })
+        ),
+        valueColumns = "party_original"  # Utiliser la colonne cachée pour déterminer les couleurs
+      )
+      
+      # Plain text for certainty column (no background color)
+      dt <- dt %>% formatStyle(
+        columns = status_col,
+        backgroundColor = "white",
+        color = "#333333"
+      )
+    }
+    
+    return(dt)
+  })
   
   # Clear cache when major inputs change
   observeEvent(list(input$partyPrediction, rv$lang()), {
@@ -1220,4 +1226,4 @@ observeEvent(TRUE, {
   invisible(rv$processed_data())
 }, once = TRUE)
 
-}
+  }
