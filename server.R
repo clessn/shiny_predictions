@@ -9,6 +9,7 @@ library(dplyr)
 library(patchwork)
 library(ggiraph)
 library(scales)
+library(lubridate)
 
 server <- function(input, output, session) {
   # Reduce verbosity
@@ -79,6 +80,13 @@ server <- function(input, output, session) {
   rv$new_data <- reactive({
     # Load data 
     df <- read.csv("https://raw.githubusercontent.com/clessn/agregateur_data/main/data/df.csv")
+    
+    # Extract the most recent date from the data
+    if ("date" %in% colnames(df) && nrow(df) > 0) {
+      # Find most recent date in case there are multiple dates
+      latest_date <- max(as.Date(df$date))
+      rv$latest_data_date <- latest_date
+    }
     
     # Create a lookup table from map_data for riding names - forcing numeric ids for consistency
     riding_names <- data.frame(
@@ -967,7 +975,27 @@ server <- function(input, output, session) {
     }
   })
   output$dataLinkLabel <- renderText({ t("data_link") })
-  output$dataUpdatedText <- renderText({ t("data_updated") })
+  output$dataUpdatedText <- renderText({ 
+    if (is.null(rv$latest_data_date)) {
+      return(t("data_updated")) # Fallback to static text if date extraction fails
+    }
+    
+    # Format the date according to the current language
+    if (rv$lang() == "fr") {
+      # Format date in French style (jour mois année)
+      months_fr <- c("janvier", "février", "mars", "avril", "mai", "juin", 
+                    "juillet", "août", "septembre", "octobre", "novembre", "décembre")
+      month_num <- month(rv$latest_data_date)
+      month_name <- months_fr[month_num]
+      day <- day(rv$latest_data_date)
+      year <- year(rv$latest_data_date)
+      
+      paste0("Données mises à jour: ", day, " ", month_name, " ", year)
+    } else {
+      # Format date in English style (Month day, Year)
+      format(rv$latest_data_date, "Data updated: %B %d, %Y")
+    }
+  })
   
   output$hoverInfoText <- renderUI({ HTML(paste0("<i class='fas fa-info-circle'></i> ", t("hover_info"))) })
   output$appTitle <- renderUI({ HTML(t("app_title")) })
